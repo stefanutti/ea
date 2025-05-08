@@ -59,11 +59,7 @@ const options = {
       color: { background: "#74b9ff", border: "#0984e3" },
       shape: "box",
     },
-    business_flow: {
-      color: { background: "#55efc4", border: "#00b894" },
-      shape: "diamond",
-    },
-    technical_flow: {
+    flow: {
       color: { background: "#ffeaa7", border: "#fdcb6e" },
       shape: "triangle",
     },
@@ -300,12 +296,12 @@ export function NetworkGraph() {
         `
         MATCH (source)-[r]-(target)
         WHERE elementId(source) = $nodeId
-        AND (target:Application OR target:BUSINESS_FLOW)
+        AND (target:Application OR target:Flow)
         RETURN source as a, r as e, target as b
         UNION
         MATCH (source)-[r]-(target)
         WHERE elementId(target) = $nodeId
-        AND (source:Application OR source:BUSINESS_FLOW)
+        AND (source:Application OR source:Flow)
         RETURN source as a, r as e, target as b
         `,
         { nodeId },
@@ -473,7 +469,7 @@ export function NetworkGraph() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Add technical flow</p>
+              <p>Add flow</p>
             </TooltipContent>
           </Tooltip>
 

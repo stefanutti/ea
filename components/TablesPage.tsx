@@ -67,8 +67,7 @@ const COLUMNS = [
 
 export function TablesPage() {
   const [applications, setApplications] = useState<TableData[]>([]);
-  const [businessFlows, setBusinessFlows] = useState<TableData[]>([]);
-  const [technicalFlows, setTechnicalFlows] = useState<TableData[]>([]);
+  const [flows, setFlows] = useState<TableData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filterValue, setFilterValue] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "name", direction: "asc" });
@@ -88,33 +87,18 @@ export function TablesPage() {
     }
   };
 
-  const fetchBusinessFlows = async () => {
+  const fetchFlows = async () => {
     try {
       const results = await executeQuery(
-        "MATCH (b:BUSINESS_FLOW) RETURN b",
+        "MATCH (f:Flow) RETURN f",
         {},
         new AbortController().signal
       );
-      setBusinessFlows(results.map(record => ({ id: record.b.elementId, ...record.b.properties })));
-      toast.success("Business flows data loaded successfully");
+      setFlows(results.map(record => ({ id: record.f.elementId, ...record.f.properties })));
+      toast.success("Flows data loaded successfully");
     } catch (error) {
-      console.error("Error fetching business flows:", error);
-      toast.error("Failed to load business flows");
-    }
-  };
-
-  const fetchTechnicalFlows = async () => {
-    try {
-      const results = await executeQuery(
-        "MATCH (t:TECHNICAL_FLOW) RETURN t",
-        {},
-        new AbortController().signal
-      );
-      setTechnicalFlows(results.map(record => ({ id: record.t.elementId, ...record.t.properties })));
-      toast.success("Technical flows data loaded successfully");
-    } catch (error) {
-      console.error("Error fetching technical flows:", error);
-      toast.error("Failed to load technical flows");
+      console.error("Error fetching flows:", error);
+      toast.error("Failed to load flows");
     }
   };
 
@@ -123,8 +107,7 @@ export function TablesPage() {
     try {
       await Promise.all([
         fetchApplications(),
-        fetchBusinessFlows(),
-        fetchTechnicalFlows()
+        fetchFlows()
       ]);
     } finally {
       setIsLoading(false);
@@ -208,47 +191,46 @@ export function TablesPage() {
           </Button>
         </div>
       
-      <div className="flex-1 min-h-0 border rounded-md">
-        <div className="h-full overflow-auto">  {/* This is crucial */}
-          <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {COLUMNS.map((column) => (
-                      <TableHead
-                        key={column}
-                        className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm"
-                      >
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleSort(column)}
-                          className="h-8 px-2 font-medium"
-                        >
-                          {column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, " ")}
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedData.map((item) => (
-                    <TableRow key={item.id}>
+        <div className="flex-1 min-h-0 border rounded-md">
+          <div className="h-full overflow-auto">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       {COLUMNS.map((column) => (
-                        <TableCell key={`${item.id}-${column}`} className="whitespace-nowrap">
-                          {formatValue(item[column])}
-                        </TableCell>
+                        <TableHead
+                          key={column}
+                          className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm"
+                        >
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort(column)}
+                            className="h-8 px-2 font-medium"
+                          >
+                            {column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, " ")}
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                          </Button>
+                        </TableHead>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedData.map((item) => (
+                      <TableRow key={item.id}>
+                        {COLUMNS.map((column) => (
+                          <TableCell key={`${item.id}-${column}`} className="whitespace-nowrap">
+                            {formatValue(item[column])}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
 
         <div className="text-sm text-muted-foreground">
           Showing {filteredData.length} entries
@@ -262,18 +244,14 @@ export function TablesPage() {
       <Tabs defaultValue="applications" className="h-full flex flex-col">
         <TabsList className="w-full justify-start border-b pb-0 bg-transparent">
           <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="business-flows">Business Flows</TabsTrigger>
-          <TabsTrigger value="technical-flows">Technical Flows</TabsTrigger>
+          <TabsTrigger value="flows">Flows</TabsTrigger>
         </TabsList>
         <div className="flex-1 pt-4 min-h-0">
           <TabsContent value="applications" className="h-full">
             {renderTable(applications)}
           </TabsContent>
-          <TabsContent value="business-flows" className="h-full">
-            {renderTable(businessFlows)}
-          </TabsContent>
-          <TabsContent value="technical-flows" className="h-full">
-            {renderTable(technicalFlows)}
+          <TabsContent value="flows" className="h-full">
+            {renderTable(flows)}
           </TabsContent>
         </div>
       </Tabs>
