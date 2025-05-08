@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { executeQuery } from "@/lib/neo4j";
-import { AppWindow, Flower as Flow, GitBranch, Magnet } from "lucide-react";
+import { AppWindow, GitBranch, Magnet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -432,7 +432,7 @@ export function NetworkGraph() {
   useEffect(() => {
     const setup = async () => {
       setIsLoading(true);
-      await initializeNetwork(); // anche se non è async, meglio essere pronti
+      await initializeNetwork();
       setIsLoading(false);
     };
     setup();
@@ -463,17 +463,6 @@ export function NetworkGraph() {
             </TooltipTrigger>
             <TooltipContent>
               <p>Add application</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Flow className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Add business flow</p>
             </TooltipContent>
           </Tooltip>
 
