@@ -21,9 +21,6 @@ export default function Home() {
           <div className={`absolute inset-0 ${activeView === "draw" ? "block" : "hidden"}`}>
             <DrawingEditor />
           </div>
-          <div className={`absolute inset-0 ${activeView === "science" ? "block" : "hidden"}`}>
-            {/* Science view content */}
-          </div>
           <div className={`absolute inset-0 ${activeView === "table" ? "block" : "hidden"}`}>
             <TablesPage />
           </div>
