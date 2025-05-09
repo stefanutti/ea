@@ -1,6 +1,6 @@
 "use client";
 
-import { Table2, PenLine, Network, Atom, Languages, HelpCircle, UserCircle } from "lucide-react";
+import { Table2, PenLine, Network, HelpCircle, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VerticalMenuProps {
@@ -11,13 +11,11 @@ interface VerticalMenuProps {
 export function VerticalMenu({ activeView, onViewChange }: VerticalMenuProps) {
   const topMenuItems = [
     { icon: Network, label: "Graph", id: "graph" },
-    { icon: Atom, label: "Science", id: "science" },
     { icon: Table2, label: "Table", id: "table" },
     { icon: PenLine, label: "Draw", id: "draw" },
   ];
 
   const bottomMenuItems = [
-    { icon: Languages, label: "Language", id: "language" },
     { icon: HelpCircle, label: "Help", id: "help", onClick: () => onViewChange("help") },
     { icon: UserCircle, label: "Profile", id: "profile" },
   ];

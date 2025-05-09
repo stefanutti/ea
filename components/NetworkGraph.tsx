@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { executeQuery } from "@/lib/neo4j";
-import { AppWindow, Flower as Flow, GitBranch, Magnet } from "lucide-react";
+import { AppWindow, Link as Line, Magnet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { QueryInput } from "@/components/QueryInput";
+
+type SortConfig = {
+  key: string;
+  direction: "asc" | "desc";
+};
+
+type TableData = {
+  id: string;
+  [key: string]: any;
+};
 
 const options = {
   nodes: {
@@ -59,11 +69,7 @@ const options = {
       color: { background: "#74b9ff", border: "#0984e3" },
       shape: "box",
     },
-    business_flow: {
-      color: { background: "#55efc4", border: "#00b894" },
-      shape: "diamond",
-    },
-    technical_flow: {
+    flow: {
       color: { background: "#ffeaa7", border: "#fdcb6e" },
       shape: "triangle",
     },
@@ -300,12 +306,12 @@ export function NetworkGraph() {
         `
         MATCH (source)-[r]-(target)
         WHERE elementId(source) = $nodeId
-        AND (target:Application OR target:BUSINESS_FLOW)
+        AND (target:Application OR target:Flow)
         RETURN source as a, r as e, target as b
         UNION
         MATCH (source)-[r]-(target)
         WHERE elementId(target) = $nodeId
-        AND (source:Application OR source:BUSINESS_FLOW)
+        AND (source:Application OR source:Flow)
         RETURN source as a, r as e, target as b
         `,
         { nodeId },
@@ -432,7 +438,7 @@ export function NetworkGraph() {
   useEffect(() => {
     const setup = async () => {
       setIsLoading(true);
-      await initializeNetwork(); // anche se non è async, meglio essere pronti
+      await initializeNetwork();
       setIsLoading(false);
     };
     setup();
@@ -469,22 +475,11 @@ export function NetworkGraph() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon">
-                <Flow className="h-4 w-4" />
+                <Line className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Add business flow</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="icon">
-                <GitBranch className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Add technical flow</p>
+              <p>Add flow</p>
             </TooltipContent>
           </Tooltip>
 

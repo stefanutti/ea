@@ -56,6 +56,7 @@ export function HelpPage() {
                 </section>
 
                 <section>
+                
                   <h3 className="font-semibold text-lg mb-2">Contact Information</h3>
                   <p className="text-muted-foreground">
                     Contact information should be provided as JSON arrays, for example:
@@ -68,19 +69,12 @@ export function HelpPage() {
             </AccordionItem>
 
             <AccordionItem value="flows">
-              <AccordionTrigger className="text-xl">Business & Technical Flows</AccordionTrigger>
+              <AccordionTrigger className="text-xl">Flows</AccordionTrigger>
               <AccordionContent className="space-y-4">
                 <section>
-                  <h3 className="font-semibold text-lg mb-2">Business Flows</h3>
+                  <h3 className="font-semibold text-lg mb-2">System Flows</h3>
                   <p className="text-muted-foreground">
-                    Business flows represent high-level processes and are shown as diamond-shaped nodes in the graph.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-lg mb-2">Technical Flows</h3>
-                  <p className="text-muted-foreground">
-                    Technical flows represent system integrations and data flows, displayed as triangle-shaped nodes.
+                    Flows represent system integrations and data flows, displayed as triangle-shaped nodes.
                   </p>
                 </section>
               </AccordionContent>
