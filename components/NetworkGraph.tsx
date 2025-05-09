@@ -76,6 +76,56 @@ const options = {
   },
 };
 
+function transformData(data : any) {
+  const result : any = {};
+
+  data.forEach(row => {
+    for (const key in row) {
+      const item = row[key];
+      const { elementId, properties, labels, type, startNodeElementId, endNodeElementId } = item;
+
+      if (!elementId) continue;
+
+      const cleanedProperties = Object.fromEntries(
+        Object.entries(properties).map(([k, v]) => {
+          if (typeof v === 'string') {
+            try {
+              const parsed = JSON.parse(v);
+
+              if (Array.isArray(parsed)) {
+                // Se array vuoto
+                if (parsed.length === 0 || (parsed.length === 1 && parsed[0] === '[]')) {
+                  return [k, ''];
+                }
+                // Se array con valori
+                return [k, parsed.join(', ')];
+              }
+            } catch (e) {
+              // Non è un JSON parsabile, continua
+            }
+          }
+
+          if (Array.isArray(v) && v.length === 0) {
+            return [k, ''];
+          }
+
+          return [k, v];
+        })
+      );
+
+      result[elementId] = {
+        ...(labels ? { labels: labels[0] } : {}),
+        ...(type ? { type } : {}),
+        ...(startNodeElementId ? { startNodeElementId } : {}),
+        ...(endNodeElementId ? { endNodeElementId } : {}),
+        ...cleanedProperties,
+      };
+    }
+  });
+
+  return result;
+}
+
 function createNodeTooltip(properties: Record<string, any>): string {
   const excludedFields = ['elementId', 'labels'];
   const fields = Object.entries(properties)
@@ -133,10 +183,20 @@ export function NetworkGraph() {
   const [isPhysicsEnabled, setIsPhysicsEnabled] = useState(true);
   const physicsStateRef = useRef(isPhysicsEnabled);
   const [graphData, setGraphData] = useState<{ nodes: any[]; edges: any[]; } | null>(null);
+  const [dataTransformed, setDataTransformed] = useState<any>([]);
+  const dataTransformedRef = useRef(dataTransformed);
+  const [applicationData, setApplicationData] = useState<any>({});
+
+
+  useEffect(() => {
+    dataTransformedRef.current = dataTransformed;
+  }, [dataTransformed]);
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
     const edges = [];
+
+    setDataTransformed(transformData(results));
 
     results.forEach(record => {
       const nodeA = record.a;
@@ -215,7 +275,7 @@ export function NetworkGraph() {
     try {
       const createNodeQuery = `
         CREATE (a:Application {
-          id: $id,
+          application_id: $application_id,
           name: $name,
           description: $description,
           application_type: $application_type,
@@ -251,26 +311,78 @@ export function NetworkGraph() {
         RETURN a
       `;
 
-      const result = await executeQuery(createNodeQuery, data);
-      
-      if (result && result.length > 0) {
-        const newNode = result[0].a;
-        
-        if (networkRef.current) {
-          const nodeData = {
-            id: newNode.elementId,
-            label: newNode.properties.name,
-            title: createNodeTooltip(newNode.properties),
-            group: 'application'
-          };
-          
-          networkRef.current.body.data.nodes.add(nodeData);
-          currentDataRef.current.nodes.set(newNode.elementId, nodeData);
-        }
+      const editNodeQuery = `
+        MATCH (a:Application { application_id: $application_id })
+          SET
+            a.name = $name,
+            a.description = $description,
+            a.application_type = $application_type,
+            a.complexity = $complexity,
+            a.criticality = $criticality,
+            a.processes = $processes,
+            a.active = $active,
+            a.internal_application_specialists = $internal_application_specialists,
+            a.business_partner_business_contacts = $business_partner_business_contacts,
+            a.business_contacts = $business_contacts,
+            a.internal_developers = $internal_developers,
+            a.hosting = $hosting,
+            a.ams = $ams,
+            a.bi = $bi,
+            a.disaster_recovery = $disaster_recovery,
+            a.user_license_type = $user_license_type,
+            a.access_type = $access_type,
+            a.ams_expire_date = $ams_expire_date,
+            a.ams_contacts_email = $ams_contacts_email,
+            a.ams_contact_phone = $ams_contact_phone,
+            a.ams_supplier = $ams_supplier,
+            a.smes_factory = $smes_factory,
+            a.ams_portal = $ams_portal,
+            a.organization_family = $organization_family,
+            a.link_to_documentation = $link_to_documentation,
+            a.scope = $scope,
+            a.ams_service = $ams_service,
+            a.ams_type = $ams_type,
+            a.decommission_date = $decommission_date,
+            a.to_be_decommissioned = $to_be_decommissioned,
+            a.notes = $notes
+          RETURN a
+      `;
 
-        toast.success("Application added successfully");
-        setIsApplicationDialogOpen(false);
-      }
+      const result = await executeQuery(Object.keys(applicationData).length === 0 ? createNodeQuery : editNodeQuery, data);
+
+        if (result && result.length > 0) {
+
+
+          if(Object.keys(applicationData).length === 0){
+
+            const newNode = result[0].a;
+          
+          if (networkRef.current) {
+            const nodeData = {
+              id: newNode.elementId,
+              label: newNode.properties.name,
+              title: createNodeTooltip(newNode.properties),
+              group: 'application'
+            };
+            
+            networkRef.current.body.data.nodes.add(nodeData);
+            currentDataRef.current.nodes.set(newNode.elementId, nodeData);
+          }
+
+          const newApp =  transformData(result);
+          const newAppKey = newNode.elementId;
+
+          setDataTransformed({...dataTransformed, [newAppKey]: newApp[newNode.elementId]});
+  
+          toast.success("Application added successfully");
+          }else{
+            toast.success("Application edited successfully");
+          }
+
+          handleQueryResults;
+          setIsApplicationDialogOpen(false);
+        }
+        
     } catch (error) {
       console.error("Error saving application:", error);
       toast.error("Failed to save application: " + (error as Error).message);
@@ -426,6 +538,19 @@ export function NetworkGraph() {
         }
       });
 
+      //Test per far visualizzare la modale di modifica
+      networkRef.current.on("oncontext", (params) => {
+
+        params.event.preventDefault();
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const nodeData = dataTransformedRef.current[nodeId];
+          setApplicationData(nodeData);
+          //console.log('Clicked node data:', nodeData);
+          setIsApplicationDialogOpen(true)
+        }
+      });
+
       networkRef.current.once("afterDrawing", () => {
         networkRef.current?.fit();
       });
@@ -434,6 +559,12 @@ export function NetworkGraph() {
       console.error("Error initializing network:", error);
     }
   }, [graphData]);
+
+  useEffect(() => {
+    if (!isApplicationDialogOpen) {
+      setApplicationData({});
+    }
+  }, [isApplicationDialogOpen]);
 
   useEffect(() => {
     const setup = async () => {
@@ -515,14 +646,14 @@ export function NetworkGraph() {
       <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
         <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col" aria-describedby="dialog-description">
           <DialogHeader>
-            <DialogTitle>Add new application</DialogTitle>
+            <DialogTitle>{Object.keys(applicationData).length === 0 ? "Add new application" : "Edit application"}</DialogTitle>
           </DialogHeader>
           <p id="dialog-description" className="sr-only">
             Use this form to create a new application and add it to the network graph.
           </p>
           <ScrollArea className="flex-1 px-4">
             <div className="py-4">
-              <ApplicationForm onSubmit={handleApplicationSubmit} />
+              <ApplicationForm onSubmit={handleApplicationSubmit} data={applicationData}/>
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4">
