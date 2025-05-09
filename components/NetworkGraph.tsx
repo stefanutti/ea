@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { executeQuery } from "@/lib/neo4j";
-import { AppWindow, GitBranch, Magnet } from "lucide-react";
+import { AppWindow, Line, Magnet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { QueryInput } from "@/components/QueryInput";
+
+type SortConfig = {
+  key: string;
+  direction: "asc" | "desc";
+};
+
+type TableData = {
+  id: string;
+  [key: string]: any;
+};
 
 const options = {
   nodes: {
@@ -465,7 +475,7 @@ export function NetworkGraph() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon">
-                <GitBranch className="h-4 w-4" />
+                <Line className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
