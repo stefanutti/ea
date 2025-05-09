@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { executeQuery } from "@/lib/neo4j";
-import { AppWindow, Line, Magnet } from "lucide-react";
+import { AppWindow, Link as Line, Magnet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
