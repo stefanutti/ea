@@ -4,12 +4,14 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { FormField } from "@/components/FormField";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
+import { executeQuery } from "@/lib/neo4j";
 import debounce from "lodash.debounce";
+import { toast } from "sonner";
 
 interface FlowFormProps {
   onSubmit: (data: any) => void;
-  data: any
+  data: any;
 }
 
 export function FlowForm({ onSubmit, data }: FlowFormProps) {
@@ -22,7 +24,7 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
       target_application: "",
       communication_mode: "",
       intent: "",
-      message_format: "",      
+      message_format: "",
       data_flow: "",
       protocol: "",
       frequency: "",
@@ -30,19 +32,58 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
       average_execution_time_in_sec: "",
       average_message_size_in_kb: "",
       api_gateway: false,
-      release_date: "", 
+      release_date: "",
       notes: "",
     },
     mode: "onChange",
     criteriaMode: "all",
-    shouldUnregister: false
+    shouldUnregister: false,
   });
+  const [applications, setApplications] = useState<[]>([]);
+
+  const fetchApplications = async () => {
+    try {
+      const results = await executeQuery(
+        "MATCH (a:Application) RETURN a",
+        {},
+        new AbortController().signal
+      );
+      console.log(
+        "All Apps ",
+        results.map((record) => ({
+          id: record.a.elementId,
+          name: record.a.properties.name,
+        }))
+      );
+      setApplications(
+        results.map((record) => ({
+          value: record.a.elementId,
+          label: record.a.properties.name,
+        }))
+      );
+      toast.success("Applications data loaded successfully");
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      toast.error("Failed to load applications");
+    }
+  };
+
+  const fetchAllData = async () => {
+    try {
+      await Promise.all([fetchApplications()]);
+    } finally {
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   useEffect(() => {
     if (data) {
       form.reset({
         ...form.getValues(), // fallback per campi mancanti
-        ...data
+        ...data,
       });
     }
   }, [data, form]);
@@ -62,22 +103,9 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
     };
   }, [form, debouncedTrigger]);
 
-  const isValidCsvString = (input: string): boolean => {
-    const csvPattern = /^(\s*("[^"]+"|[^",]+)\s*)(,\s*("[^"]+"|[^",]+)\s*)*$/;
-    return csvPattern.test(input);
-  };
-  
-  const validateJsonFields = (data: any): boolean => {
+  /*const validateJsonFields = (data: any): boolean => {
     const jsonFields = [
-      'internal_developers',
-      'ams_contacts_email',
-      'ams_contacts_phone',
-      'internal_application_specialists',
-      'business_partner_business_contacts',
-      'business_contacts',
-      'smes_factory',
-      'ownerships',
-      'links_to_sharepoint_documentation'
+      '',
     ];
   
     return jsonFields.every(field => {
@@ -85,42 +113,33 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
       if (!value) return true;
       return isValidCsvString(value);
     });
-  };
-  
+  };*/
+
   const handleSubmit = async (data: any) => {
-    if (!validateJsonFields(data)) {
+    /*if (!validateJsonFields(data)) {
       form.setError('root', {
         type: 'manual',
         message: 'Invalid format in one or more fields.'
       });
       return;
-    }
+    }*/
 
     const transformedData = { ...data };
-
-    // Convert array fields to comma-separated strings
-    if (Array.isArray(transformedData.access_type)) {
-      transformedData.access_type = transformedData.access_type.join(', ');
-    }
-
-    if (Array.isArray(transformedData.processes)) {
-      transformedData.processes = transformedData.processes.join(', ');
-    }
-
-    if (Array.isArray(transformedData.organization_family)) {
-      transformedData.organization_family = transformedData.organization_family.join(', ');
-    }
 
     onSubmit(transformedData);
   };
 
-  const amsEnabled = form.watch("ams");
-
   return (
     <Form {...form}>
-      <form id="flow-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form
+        id="flow-form"
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-8"
+      >
         {form.formState.errors.root && (
-          <div className="text-red-500">{form.formState.errors.root.message}</div>
+          <div className="text-red-500">
+            {form.formState.errors.root.message}
+          </div>
         )}
         <div className="grid grid-cols-2 gap-8">
           {/* Basic information */}
@@ -144,13 +163,13 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
 
           {/* Flow details */}
           <div className="space-y-6">
-
             <FormField
               form={form}
               name="initiator_application"
               label="Initiator Application"
-              type="text"
+              type="select"
               placeholder="Initiator Application"
+              options={applications}
             />
 
             <FormField
@@ -164,7 +183,6 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 { value: "Asynchronous", label: "Asynchronous" },
               ]}
             />
-
 
             <FormField
               form={form}
@@ -182,7 +200,7 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 { value: "text", label: "Text" },
                 { value: "xml", label: "XML" },
                 { value: "multiple-formats", label: "Multiple formats" },
-                { value: "unknown", label: "Unknown" }
+                { value: "unknown", label: "Unknown" },
               ]}
             />
 
@@ -202,33 +220,36 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 { value: "folder", label: "folder" },
                 { value: "ftp", label: "ftp" },
                 { value: "http", label: "http" },
-                { value: "http:azure-blob-storage", label: "http:azure-blob-storage" },
+                {
+                  value: "http:azure-blob-storage",
+                  label: "http:azure-blob-storage",
+                },
                 { value: "human-manual-task", label: "human-manual-task" },
                 { value: "ldap", label: "ldap" },
                 { value: "queue", label: "queue" },
-                { value: "queue:azure-service-bus", label: "queue:azure-service-bus" },
+                {
+                  value: "queue:azure-service-bus",
+                  label: "queue:azure-service-bus",
+                },
                 { value: "soap", label: "soap" },
-                { value: "topic", label: "topic" },  
-                { value: "topic:kafka", label: "topic:kafka" },  
-                { value: "wcf", label: "wcf" },  
-                { value: "web-api", label: "web-api" },  
-                { value: "unknown", label: "unknown" },            
+                { value: "topic", label: "topic" },
+                { value: "topic:kafka", label: "topic:kafka" },
+                { value: "wcf", label: "wcf" },
+                { value: "web-api", label: "web-api" },
+                { value: "unknown", label: "unknown" },
               ]}
             />
-
-            
           </div>
 
           <div className="space-y-6">
-
             <FormField
               form={form}
               name="target_application"
               label="Target Application"
-              type="text"
+              type="select"
               placeholder="Target Application"
+              options={applications}
             />
-            
 
             <FormField
               form={form}
@@ -250,7 +271,6 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
               ]}
             />
 
-
             <FormField
               form={form}
               name="data_flow"
@@ -262,13 +282,12 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 { value: "out", label: "Out" },
               ]}
             />
-
           </div>
 
           {/* Details */}
           <div className="col-span-2 space-y-6">
             <h3 className="text-lg font-semibold">Details</h3>
-            
+
             <div className="grid grid-cols-2 gap-8">
               <FormField
                 form={form}
@@ -301,17 +320,14 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 type="text"
                 placeholder="Average message size in kb"
               />
-
             </div>
           </div>
-
 
           {/* Status and flags */}
           <div className="col-span-2 space-y-6">
             <h3 className="text-lg font-semibold">Status and flags</h3>
-            
-            <div className="grid grid-cols-2 gap-8">
 
+            <div className="grid grid-cols-2 gap-8">
               <FormField
                 form={form}
                 name="api_gateway"
@@ -320,21 +336,19 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 description="Is api gateway enabled?"
               />
 
-
               <FormField
-                  form={form}
-                  name="release_date"
-                  label="Release date"
-                  type="date"
+                form={form}
+                name="release_date"
+                label="Release date"
+                type="date"
               />
-
             </div>
           </div>
 
           {/* Additional information */}
           <div className="col-span-2 space-y-6">
             <h3 className="text-lg font-semibold">Additional information</h3>
-            
+
             <FormField
               form={form}
               name="notes"
