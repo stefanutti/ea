@@ -117,8 +117,8 @@ function transformData(data : any) {
       result[elementId] = {
         ...(labels ? { labels: labels[0] } : {}),
         ...(type ? { type } : {}),
-        ...(startNodeElementId ? { startNodeElementId } : {}),
-        ...(endNodeElementId ? { endNodeElementId } : {}),
+        ...(startNodeElementId ? { initiator_application: startNodeElementId } : {}),
+        ...(endNodeElementId ? { target_application: endNodeElementId } : {}),
         ...cleanedProperties,
       };
     }
