@@ -193,12 +193,14 @@ export function NetworkGraph() {
 
   useEffect(() => {
     dataTransformedRef.current = dataTransformed;
+    console.log(dataTransformedRef.current);
   }, [dataTransformed]);
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
     const edges = [];
 
+    console.log("RESULTS ",results)
     setDataTransformed(transformData(results));
 
     results.forEach(record => {
@@ -419,10 +421,12 @@ export function NetworkGraph() {
         MATCH (initiator:Application {application_id: $initiator_application})
         MATCH (target:Application {application_id: $target_application})
 
-        CREATE (initiator)-[f:BUSINESS_FLOW {
+        CREATE (initiator)-[f:technical_flow {
           flow_id: $flow_id,
           name: $name,
           description: $description,
+          initiator_application: $initiator_application,
+          target_application: $target_application,
           communication_mode: $communication_mode,
           intent: $intent,
           message_format: $message_format,
@@ -442,7 +446,7 @@ export function NetworkGraph() {
       const editFlowQuery = `
         MATCH (initiator:Application {application_id: $initiator_application})
         MATCH (target:Application {application_id: $target_application})
-        MATCH (initiator)-[f:BUSINESS_FLOW]->(target)
+        MATCH (initiator)-[f:technical_flow]->(target)
 
         SET
           f.name = $name,
@@ -462,16 +466,16 @@ export function NetworkGraph() {
         RETURN f
         `;
 
-      //console.log("Data submit ", data)
+      console.log("Data submit ", data)
       const result = await executeQuery(Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery, data);
 
         if (result && result.length > 0) {
-          //console.log("Result ", result)
+          console.log("Result ", result)
 
 
           if(Object.keys(flowData).length === 0){
 
-            const newNode = result[0].a;
+            const newNode = result[0].f;
           
           if (networkRef.current) {
             const nodeData = {

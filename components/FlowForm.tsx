@@ -48,16 +48,9 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
         {},
         new AbortController().signal
       );
-      console.log(
-        "All Apps ",
-        results.map((record) => ({
-          id: record.a.elementId,
-          name: record.a.properties.name,
-        }))
-      );
       setApplications(
         results.map((record) => ({
-          value: record.a.elementId,
+          value: record.a.properties.application_id,
           label: record.a.properties.name,
         }))
       );

@@ -149,7 +149,7 @@ export function TablesPage() {
   const fetchFlows = async () => {
     try {
       const results = await executeQuery(
-        "MATCH (a)-[r]->(b) RETURN a, r, b",
+        "MATCH ()-[r:technical_flow]->() RETURN r",
         {},
         new AbortController().signal
       );
