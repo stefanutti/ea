@@ -26,6 +26,63 @@ type TableData = {
   [key: string]: any;
 };
 
+const appColumns  = [
+  'application_id',
+  'name',
+  'description',
+  'application_type',
+  'ownerships',
+  'active',
+  'internal_developers',
+  'hosting',
+  'ams',
+  'sw_supplier',
+  'disaster_recovery',
+  'user_license_type',
+  'access_type',
+  'ams_expire_date',
+  'ams_contacts_email',
+  'ams_contacts_phone',
+  'ams_portal',
+  'ams_service',
+  'ams_type',
+  'ams_supplier',
+  'organization_family',
+  'scope',
+  'to_be_decommissioned',
+  'decommission_date',
+  'bi',
+  'criticality',
+  'complexity',
+  'effort',
+  'links_to_sharepoint_documentation',
+  'links_to_documentation',
+  'notes',
+  'processes',
+  'internal_application_specialists',
+  'business_partner_business_contacts',
+  'business_contacts',
+  'smes_factory'
+];
+
+const flowColumns = [
+  'flow_id',
+  'name',
+  'description',
+  'communication_mode',
+  'intent',
+  'message_format',
+  'data_flow',
+  'protocol',
+  'frequency',
+  'estimated_calls_per_day',
+  'average_execution_time_in_sec',
+  'average_message_size_in_kb',
+  'api_gateway',
+  'release_date',
+  'notes'
+]
+
 const COLUMNS = [
   'application_id',
   'name',
@@ -66,6 +123,7 @@ const COLUMNS = [
 ];
 
 export function TablesPage() {
+  const [columns, setColumns] = useState<any>(appColumns);
   const [applications, setApplications] = useState<TableData[]>([]);
   const [flows, setFlows] = useState<TableData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +137,7 @@ export function TablesPage() {
         {},
         new AbortController().signal
       );
+
       setApplications(results.map(record => ({ id: record.a.elementId, ...record.a.properties })));
       toast.success("Applications data loaded successfully");
     } catch (error) {
@@ -90,11 +149,12 @@ export function TablesPage() {
   const fetchFlows = async () => {
     try {
       const results = await executeQuery(
-        "MATCH (f:Flow) RETURN f",
+        "MATCH (a)-[r]->(b) RETURN a, r, b",
         {},
         new AbortController().signal
       );
-      setFlows(results.map(record => ({ id: record.f.elementId, ...record.f.properties })));
+
+      setFlows(results.map(record => ({ id: record.r.elementId, ...record.r.properties })));
       toast.success("Flows data loaded successfully");
     } catch (error) {
       console.error("Error fetching flows:", error);
@@ -198,7 +258,7 @@ export function TablesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {COLUMNS.map((column) => (
+                      {columns.map((column) => (
                         <TableHead
                           key={column}
                           className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm"
@@ -218,7 +278,7 @@ export function TablesPage() {
                   <TableBody>
                     {sortedData.map((item) => (
                       <TableRow key={item.id}>
-                        {COLUMNS.map((column) => (
+                        {columns.map((column) => (
                           <TableCell key={`${item.id}-${column}`} className="whitespace-nowrap">
                             {formatValue(item[column])}
                           </TableCell>
@@ -243,8 +303,8 @@ export function TablesPage() {
     <div className="w-full h-full border rounded-lg bg-card p-6">
       <Tabs defaultValue="applications" className="h-full flex flex-col">
         <TabsList className="w-full justify-start border-b pb-0 bg-transparent">
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="flows">Flows</TabsTrigger>
+          <TabsTrigger value="applications" onClick={() => setColumns(appColumns)}>Applications</TabsTrigger>
+          <TabsTrigger value="flows" onClick={() => setColumns(flowColumns)}>Flows</TabsTrigger>
         </TabsList>
         <div className="flex-1 pt-4 min-h-0">
           <TabsContent value="applications" className="h-full">
