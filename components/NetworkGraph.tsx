@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ApplicationForm } from "./ApplicationForm";
+import { FlowForm } from "./FlowForm";
 import {
   Tooltip,
   TooltipContent,
@@ -180,12 +181,14 @@ export function NetworkGraph() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [isPhysicsEnabled, setIsPhysicsEnabled] = useState(true);
   const physicsStateRef = useRef(isPhysicsEnabled);
   const [graphData, setGraphData] = useState<{ nodes: any[]; edges: any[]; } | null>(null);
   const [dataTransformed, setDataTransformed] = useState<any>([]);
   const dataTransformedRef = useRef(dataTransformed);
   const [applicationData, setApplicationData] = useState<any>({});
+  const [flowData, setFlowData] = useState<any>({});
 
 
   useEffect(() => {
@@ -262,6 +265,22 @@ export function NetworkGraph() {
       };
 
       await handleSaveApplication(transformedData);
+    } catch (error) {
+      console.error("Error transforming data:", error);
+      toast.error("Invalid format in one or more fields");
+    }
+  };
+
+  const handleFlowSubmit = async (data: any) => {
+    try {
+      const transformedData = {
+        ...data,
+        notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+        release_date: data.release_date || null
+      };
+
+      //console.log("Data -> ", transformedData)
+      await handleSaveFlow(transformedData);
     } catch (error) {
       console.error("Error transforming data:", error);
       toast.error("Invalid format in one or more fields");
@@ -381,6 +400,103 @@ export function NetworkGraph() {
 
           handleQueryResults;
           setIsApplicationDialogOpen(false);
+        }
+        
+    } catch (error) {
+      console.error("Error saving application:", error);
+      toast.error("Failed to save application: " + (error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveFlow = async (data: any) => {
+    if (!data) return;
+
+    setIsLoading(true);
+    try {
+      const createFlowQuery = `
+        MATCH (initiator:Application {application_id: $initiator_application})
+        MATCH (target:Application {application_id: $target_application})
+
+        CREATE (initiator)-[f:BUSINESS_FLOW {
+          flow_id: $flow_id,
+          name: $name,
+          description: $description,
+          communication_mode: $communication_mode,
+          intent: $intent,
+          message_format: $message_format,
+          data_flow: $data_flow,
+          protocol: $protocol,
+          frequency: $frequency,
+          estimated_calls_per_day: $estimated_calls_per_day,
+          average_execution_time_in_sec: $average_execution_time_in_sec,
+          average_message_size_in_kb: $average_message_size_in_kb,
+          api_gateway: $api_gateway,
+          release_date: $release_date,
+          notes: $notes
+        }]->(target)
+        RETURN f
+      `;
+
+      const editFlowQuery = `
+        MATCH (initiator:Application {application_id: $initiator_application})
+        MATCH (target:Application {application_id: $target_application})
+        MATCH (initiator)-[f:BUSINESS_FLOW]->(target)
+
+        SET
+          f.name = $name,
+          f.description = $description,
+          f.communication_mode = $communication_mode,
+          f.intent = $intent,
+          f.message_format = $message_format,
+          f.data_flow = $data_flow,
+          f.protocol = $protocol,
+          f.frequency = $frequency,
+          f.estimated_calls_per_day = $estimated_calls_per_day,
+          f.average_execution_time_in_sec = $average_execution_time_in_sec,
+          f.average_message_size_in_kb = $average_message_size_in_kb,
+          f.api_gateway = $api_gateway,
+          f.release_date = $release_date,
+          f.notes = $notes
+        RETURN f
+        `;
+
+      //console.log("Data submit ", data)
+      const result = await executeQuery(Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery, data);
+
+        if (result && result.length > 0) {
+          //console.log("Result ", result)
+
+
+          if(Object.keys(flowData).length === 0){
+
+            const newNode = result[0].a;
+          
+          if (networkRef.current) {
+            const nodeData = {
+              id: newNode.elementId,
+              label: newNode.properties.name,
+              title: createNodeTooltip(newNode.properties),
+              group: 'flow'
+            };
+            
+            networkRef.current.body.data.nodes.add(nodeData);
+            currentDataRef.current.nodes.set(newNode.elementId, nodeData);
+          }
+
+          const newApp =  transformData(result);
+          const newAppKey = newNode.elementId;
+
+          setDataTransformed({...dataTransformed, [newAppKey]: newApp[newNode.elementId]});
+  
+          toast.success("Flow added successfully");
+          }else{
+            toast.success("Flow edited successfully");
+          }
+
+          handleQueryResults;
+          setIsFlowDialogOpen(false);
         }
         
     } catch (error) {
@@ -549,6 +665,14 @@ export function NetworkGraph() {
           //console.log('Clicked node data:', nodeData);
           setIsApplicationDialogOpen(true)
         }
+
+        if (params.edges.length > 0 && params.nodes.length === 0) {
+          const edgeId = params.edges[0];
+          const edgeData = dataTransformedRef.current[edgeId];
+          setFlowData(edgeData);
+          //console.log('Clicked edge data:', edgeData);
+          setIsFlowDialogOpen(true)
+        }
       });
 
       networkRef.current.once("afterDrawing", () => {
@@ -565,6 +689,12 @@ export function NetworkGraph() {
       setApplicationData({});
     }
   }, [isApplicationDialogOpen]);
+
+  useEffect(() => {
+    if (!isFlowDialogOpen) {
+      setFlowData({});
+    }
+  }, [isFlowDialogOpen]);
 
   useEffect(() => {
     const setup = async () => {
@@ -605,7 +735,7 @@ export function NetworkGraph() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" onClick={() => setIsFlowDialogOpen(true)}>
                 <Line className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -666,6 +796,35 @@ export function NetworkGraph() {
               disabled={isLoading}
             >
               Save application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col" aria-describedby="dialog-description">
+          <DialogHeader>
+            <DialogTitle>{Object.keys(flowData).length === 0 ? "Add new flow" : "Edit flow"}</DialogTitle>
+          </DialogHeader>
+          <p id="dialog-description" className="sr-only">
+            Use this form to create a new flow.
+          </p>
+          <ScrollArea className="flex-1 px-4">
+            <div className="py-4">
+              <FlowForm onSubmit={handleFlowSubmit} data={flowData}/>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsFlowDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              form="flow-form"
+              disabled={isLoading}
+            >
+              Save flow
             </Button>
           </DialogFooter>
         </DialogContent>
