@@ -193,14 +193,14 @@ export function NetworkGraph() {
 
   useEffect(() => {
     dataTransformedRef.current = dataTransformed;
-    console.log(dataTransformedRef.current);
+    //console.log(dataTransformedRef.current);
   }, [dataTransformed]);
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
     const edges = [];
 
-    console.log("RESULTS ",results)
+    //console.log("RESULTS ",results)
     setDataTransformed(transformData(results));
 
     results.forEach(record => {
@@ -466,16 +466,16 @@ export function NetworkGraph() {
         RETURN f
         `;
 
-      console.log("Data submit ", data)
+      //console.log("Data submit ", data)
       const result = await executeQuery(Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery, data);
 
         if (result && result.length > 0) {
-          console.log("Result ", result)
+          //console.log("Result ", result)
 
 
           if(Object.keys(flowData).length === 0){
 
-            const newNode = result[0].f;
+            const newNode = result[0].a;
           
           if (networkRef.current) {
             const nodeData = {
