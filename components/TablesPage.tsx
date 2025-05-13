@@ -267,9 +267,10 @@ export function TablesPage() {
 
   const handleApplicationSubmit = async (data: any) => {
     try {
+      console.log("App submit ", data)
       const transformedData = {
         ...data,
-        internal_application_specialists: data.internal_application_specialists
+        /*internal_application_specialists: data.internal_application_specialists
           ? JSON.stringify(
               data.internal_application_specialists
                 .split(",")
@@ -333,11 +334,11 @@ export function TablesPage() {
                 .map((v) => v.trim())
                 .filter(Boolean)
             )
-          : "[]",
+          : "[]",*/
         ams_expire_date: data.ams_expire_date || null,
         ams_supplier: data.ams_supplier || "",
         ams_portal: data.ams_portal || "",
-        link_to_documentation: data.link_to_documentation || "",
+        links_to_documentation: data.links_to_documentation || "",
         ams_type: data.ams_type || "",
         decommission_date: data.decommission_date || null,
       };
@@ -353,14 +354,14 @@ export function TablesPage() {
     try {
       const transformedData = {
         ...data,
-        notes: data.notes
+        /*notes: data.notes
           ? JSON.stringify(
               data.notes
                 .split(",")
                 .map((v) => v.trim())
                 .filter(Boolean)
             )
-          : "[]",
+          : "[]",*/
         release_date: data.release_date || null,
       };
 
@@ -382,6 +383,7 @@ export function TablesPage() {
             SET
               a.name = $name,
               a.description = $description,
+              a.ownerships = $ownerships,
               a.application_type = $application_type,
               a.complexity = $complexity,
               a.criticality = $criticality,
@@ -397,6 +399,7 @@ export function TablesPage() {
               a.disaster_recovery = $disaster_recovery,
               a.user_license_type = $user_license_type,
               a.access_type = $access_type,
+              a.sw_supplier = $sw_supplier,
               a.ams_expire_date = $ams_expire_date,
               a.ams_contacts_email = $ams_contacts_email,
               a.ams_contact_phone = $ams_contact_phone,
@@ -404,13 +407,14 @@ export function TablesPage() {
               a.smes_factory = $smes_factory,
               a.ams_portal = $ams_portal,
               a.organization_family = $organization_family,
-              a.link_to_documentation = $link_to_documentation,
+              a.links_to_documentation = $links_to_documentation,
               a.scope = $scope,
               a.ams_service = $ams_service,
               a.ams_type = $ams_type,
               a.decommission_date = $decommission_date,
               a.to_be_decommissioned = $to_be_decommissioned,
-              a.notes = $notes
+              a.notes = $notes,
+              a.links_to_sharepoint_documentation = $links_to_sharepoint_documentation
             RETURN a
         `;
 

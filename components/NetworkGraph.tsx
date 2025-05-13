@@ -250,18 +250,18 @@ export function NetworkGraph() {
     try {
       const transformedData = {
         ...data,
-        internal_application_specialists: data.internal_application_specialists ? JSON.stringify(data.internal_application_specialists.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+        /*internal_application_specialists: data.internal_application_specialists ? JSON.stringify(data.internal_application_specialists.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         business_partner_business_contacts: data.business_partner_business_contacts ? JSON.stringify(data.business_partner_business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         business_contacts: data.business_contacts ? JSON.stringify(data.business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         internal_developers: data.internal_developers ? JSON.stringify(data.internal_developers.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         ams_contacts_email: data.ams_contacts_email ? JSON.stringify(data.ams_contacts_email.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         ams_contact_phone: data.ams_contact_phone ? JSON.stringify(data.ams_contact_phone.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         smes_factory: data.smes_factory ? JSON.stringify(data.smes_factory.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-        notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+        notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",*/
         ams_expire_date: data.ams_expire_date || null,
         ams_supplier: data.ams_supplier || "",
         ams_portal: data.ams_portal || "",
-        link_to_documentation: data.link_to_documentation || "",
+        links_to_documentation: data.links_to_documentation || "",
         ams_type: data.ams_type || "",
         decommission_date: data.decommission_date || null
       };
@@ -277,7 +277,7 @@ export function NetworkGraph() {
     try {
       const transformedData = {
         ...data,
-        notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+        //notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         release_date: data.release_date || null
       };
 
@@ -299,6 +299,7 @@ export function NetworkGraph() {
           application_id: $application_id,
           name: $name,
           description: $description,
+          ownerships: $ownerships,
           application_type: $application_type,
           complexity: $complexity,
           criticality: $criticality,
@@ -314,6 +315,7 @@ export function NetworkGraph() {
           disaster_recovery: $disaster_recovery,
           user_license_type: $user_license_type,
           access_type: $access_type,
+          sw_supplier: $sw_supplier,
           ams_expire_date: $ams_expire_date,
           ams_contacts_email: $ams_contacts_email,
           ams_contact_phone: $ams_contact_phone,
@@ -321,13 +323,14 @@ export function NetworkGraph() {
           smes_factory: $smes_factory,
           ams_portal: $ams_portal,
           organization_family: $organization_family,
-          link_to_documentation: $link_to_documentation,
+          links_to_documentation: $links_to_documentation,
           scope: $scope,
           ams_service: $ams_service,
           ams_type: $ams_type,
           decommission_date: $decommission_date,
           to_be_decommissioned: $to_be_decommissioned,
           notes: $notes
+          links_to_sharepoint_documentation: $links_to_sharepoint_documentation
         })
         RETURN a
       `;
@@ -337,6 +340,7 @@ export function NetworkGraph() {
           SET
             a.name = $name,
             a.description = $description,
+            a.ownerships = $ownerships,
             a.application_type = $application_type,
             a.complexity = $complexity,
             a.criticality = $criticality,
@@ -352,6 +356,7 @@ export function NetworkGraph() {
             a.disaster_recovery = $disaster_recovery,
             a.user_license_type = $user_license_type,
             a.access_type = $access_type,
+            a.sw_supplier = $sw_supplier,
             a.ams_expire_date = $ams_expire_date,
             a.ams_contacts_email = $ams_contacts_email,
             a.ams_contact_phone = $ams_contact_phone,
@@ -359,13 +364,14 @@ export function NetworkGraph() {
             a.smes_factory = $smes_factory,
             a.ams_portal = $ams_portal,
             a.organization_family = $organization_family,
-            a.link_to_documentation = $link_to_documentation,
+            a.links_to_documentation = $links_to_documentation,
             a.scope = $scope,
             a.ams_service = $ams_service,
             a.ams_type = $ams_type,
             a.decommission_date = $decommission_date,
             a.to_be_decommissioned = $to_be_decommissioned,
-            a.notes = $notes
+            a.notes = $notes,
+            a.links_to_sharepoint_documentation = $links_to_sharepoint_documentation
           RETURN a
       `;
 
