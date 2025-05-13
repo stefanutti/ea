@@ -40,8 +40,29 @@ export function SaveDrawingForm({ onSubmit }: SaveDrawingFormProps) {
     };
   }, [form, debouncedTrigger]);
 
+  const validateJsonFields = (data: any): boolean => {
+    const jsonFields = [
+      'filename'
+    ];
+  
+    return jsonFields.every(field => {
+      const value = data[field];
+      if (!value){
+        return false;
+      }else{
+        return true;
+      }
+    });
+  };
   
   const handleSubmit = async (data: any) => {
+    if (!validateJsonFields(data)) {
+      form.setError('root', {
+        type: 'manual',
+        message: 'File name is mandatory'
+      });
+      return;
+    }
 
     const transformedData = { ...data };
 
