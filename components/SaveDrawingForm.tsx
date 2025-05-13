@@ -14,8 +14,8 @@ interface SaveDrawingFormProps {
 export function SaveDrawingForm({ onSubmit }: SaveDrawingFormProps) {
   const form = useForm<any>({
     defaultValues: {
-      name: "",
-      user_id: "xxxx",
+      filename: "",
+      user_id: 12345,
       drawings: "",
       version: 1,
     },
@@ -59,7 +59,7 @@ export function SaveDrawingForm({ onSubmit }: SaveDrawingFormProps) {
             <FormField
               form={form}
               name="filename"
-              label="Name*"
+              label="File name*"
               type="text"
               placeholder="File name"
             />
