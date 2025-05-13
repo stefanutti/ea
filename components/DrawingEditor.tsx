@@ -1,17 +1,56 @@
-"use client";
+import {
+	DefaultMainMenu,
+	DefaultMainMenuContent,
+	DefaultQuickActions,
+	DefaultQuickActionsContent,
+	TLComponents,
+	Tldraw,
+	TldrawUiMenuGroup,
+	TldrawUiMenuItem,
+} from 'tldraw'
+import 'tldraw/tldraw.css'
 
-import dynamic from 'next/dynamic';
-import '@tldraw/tldraw/tldraw.css';
+/*function CustomMainMenu() {
+	return (
+		<DefaultMainMenu>
+			<div style={{ backgroundColor: 'thistle' }}>
+				<TldrawUiMenuGroup id="example">
+					<TldrawUiMenuItem
+						id="like"
+						label="Like my posts"
+						icon="external-link"
+						readonlyOk
+						onSelect={() => {
+							window.open('https://x.com/tldraw', '_blank')
+						}}
+					/>
+				</TldrawUiMenuGroup>
+			</div>
+			<DefaultMainMenuContent />
+		</DefaultMainMenu>
+	)
+}*/
 
-const Tldraw = dynamic(
-  () => import('@tldraw/tldraw').then((mod) => mod.Tldraw),
-  { ssr: false }
-);
+function CustomQuickActions() {
+	return (
+		<DefaultQuickActions>
+			<DefaultQuickActionsContent />
+			<div>
+				<TldrawUiMenuItem id="save" icon="bring-to-front" onSelect={() => window.alert('Salva')} label="Salva"/>
+			</div>
+		</DefaultQuickActions>
+	)
+}
+
+const components: TLComponents = {
+	//MainMenu: CustomMainMenu,
+	QuickActions: CustomQuickActions,
+}
 
 export function DrawingEditor() {
-  return (
-    <div className="w-full h-full border rounded-lg bg-card overflow-hidden">
-      <Tldraw />
-    </div>
-  );
+	return (
+		<div className="w-full h-full border rounded-lg bg-card overflow-hidden">
+			<Tldraw components={components} />
+		</div>
+	)
 }
