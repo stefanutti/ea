@@ -267,7 +267,7 @@ export function TablesPage() {
 
   const handleApplicationSubmit = async (data: any) => {
     try {
-      console.log("App submit ", data)
+      //console.log("App submit ", data)
       const transformedData = {
         ...data,
         /*internal_application_specialists: data.internal_application_specialists
@@ -607,7 +607,7 @@ export function TablesPage() {
         onOpenChange={setIsApplicationDialogOpen}
       >
         <DialogContent
-          className="sm:max-w-[800px] h-[90vh] flex flex-col"
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
           aria-describedby="dialog-description"
         >
           <DialogHeader>
@@ -641,7 +641,7 @@ export function TablesPage() {
 
       <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
         <DialogContent
-          className="sm:max-w-[800px] h-[90vh] flex flex-col"
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
           aria-describedby="dialog-description"
         >
           <DialogHeader>

@@ -784,7 +784,7 @@ export function NetworkGraph() {
       </div>
 
       <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col" aria-describedby="dialog-description">
+        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]" aria-describedby="dialog-description">
           <DialogHeader>
             <DialogTitle>{Object.keys(applicationData).length === 0 ? "Add new application" : "Edit application"}</DialogTitle>
           </DialogHeader>
@@ -813,7 +813,7 @@ export function NetworkGraph() {
 
 
       <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col" aria-describedby="dialog-description">
+        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]" aria-describedby="dialog-description">
           <DialogHeader>
             <DialogTitle>{Object.keys(flowData).length === 0 ? "Add new flow" : "Edit flow"}</DialogTitle>
           </DialogHeader>
