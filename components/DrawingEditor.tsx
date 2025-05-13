@@ -16,6 +16,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { SaveDrawingForm } from "./SaveDrawingForm";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -49,11 +56,11 @@ export function DrawingEditor() {
         .select();
 
       if (error) {
-      console.error("Errore Supabase:", error.message, error.details);
-      throw error;
-    }
+        console.error("Errore Supabase:", error.message, error.details);
+        throw error;
+      }
 
-    //console.log("Disegno salvato:", data);
+      //console.log("Disegno salvato:", data);
     }
   };
 
@@ -75,7 +82,7 @@ export function DrawingEditor() {
     }
   };
 
-  const CustomQuickActions = () => {
+  const SaveButton = () => {
     return (
       <DefaultQuickActions>
         <DefaultQuickActionsContent />
@@ -91,8 +98,31 @@ export function DrawingEditor() {
     );
   };
 
+  function SelectDrawing() {
+  const [selected, setSelected] = useState("default");
+
+  return (
+    <div
+      className="absolute bottom-3 right-2 z-[1000] bg-none rounded-md shadow-md"
+      style={{ pointerEvents: "auto" }}
+    >
+      <Select onValueChange={(value) => setSelected(value)} defaultValue={selected}>
+        <SelectTrigger className="w-[180px] border-none shadow-lg bg-background focus:ring-0 focus:outline-none rounded-md">
+          <SelectValue placeholder="Seleziona azione" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">Seleziona disegno</SelectItem>
+          <SelectItem value="mode1">Disegno1</SelectItem>
+          <SelectItem value="mode2">Disegno2</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
   const components: TLComponents = {
-    QuickActions: CustomQuickActions,
+    QuickActions: SaveButton,
+    NavigationPanel: SelectDrawing,
   };
 
   return (
