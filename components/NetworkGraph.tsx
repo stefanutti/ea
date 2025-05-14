@@ -54,16 +54,16 @@ const options = {
       springLength: 200,
       springConstant: 0.04,
     },
-    stabilization: { 
+    stabilization: {
       enabled: true,
       iterations: 1000,
       updateInterval: 50,
       onlyDynamicEdges: false,
-      fit: true
+      fit: true,
     },
   },
-  layout: { 
-    improvedLayout: true 
+  layout: {
+    improvedLayout: true,
   },
   groups: {
     application: {
@@ -77,29 +77,39 @@ const options = {
   },
 };
 
-function transformData(data : any) {
-  const result : any = {};
+function transformData(data: any) {
+  const result: any = {};
 
-  data.forEach(row => {
+  data.forEach((row) => {
     for (const key in row) {
       const item = row[key];
-      const { elementId, properties, labels, type, startNodeElementId, endNodeElementId } = item;
+      const {
+        elementId,
+        properties,
+        labels,
+        type,
+        startNodeElementId,
+        endNodeElementId,
+      } = item;
 
       if (!elementId) continue;
 
       const cleanedProperties = Object.fromEntries(
         Object.entries(properties).map(([k, v]) => {
-          if (typeof v === 'string') {
+          if (typeof v === "string") {
             try {
               const parsed = JSON.parse(v);
 
               if (Array.isArray(parsed)) {
                 // Se array vuoto
-                if (parsed.length === 0 || (parsed.length === 1 && parsed[0] === '[]')) {
-                  return [k, ''];
+                if (
+                  parsed.length === 0 ||
+                  (parsed.length === 1 && parsed[0] === "[]")
+                ) {
+                  return [k, ""];
                 }
                 // Se array con valori
-                return [k, parsed.join(', ')];
+                return [k, parsed.join(", ")];
               }
             } catch (e) {
               // Non è un JSON parsabile, continua
@@ -107,7 +117,7 @@ function transformData(data : any) {
           }
 
           if (Array.isArray(v) && v.length === 0) {
-            return [k, ''];
+            return [k, ""];
           }
 
           return [k, v];
@@ -117,7 +127,9 @@ function transformData(data : any) {
       result[elementId] = {
         ...(labels ? { labels: labels[0] } : {}),
         ...(type ? { type } : {}),
-        ...(startNodeElementId ? { initiator_application: startNodeElementId } : {}),
+        ...(startNodeElementId
+          ? { initiator_application: startNodeElementId }
+          : {}),
         ...(endNodeElementId ? { target_application: endNodeElementId } : {}),
         ...cleanedProperties,
       };
@@ -128,45 +140,50 @@ function transformData(data : any) {
 }
 
 function createNodeTooltip(properties: Record<string, any>): string {
-  const excludedFields = ['elementId', 'labels'];
+  const excludedFields = ["elementId", "labels"];
   const fields = Object.entries(properties)
-    .filter(([key]) => !excludedFields.includes(key) && properties[key] !== null && properties[key] !== '')
+    .filter(
+      ([key]) =>
+        !excludedFields.includes(key) &&
+        properties[key] !== null &&
+        properties[key] !== ""
+    )
     .map(([key, value]) => {
       if (Array.isArray(value)) {
-        return `<strong>${formatKey(key)}</strong>: ${value.join(', ')}`;
+        return `<strong>${formatKey(key)}</strong>: ${value.join(", ")}`;
       }
       return `<strong>${formatKey(key)}</strong>: ${value}`;
     });
 
   return `<div style="max-width: 300px; padding: 8px;">
-    ${fields.join('<br>')}
+    ${fields.join("<br>")}
   </div>`;
 }
 
 function createEdgeTooltip(properties: Record<string, any>): string {
   if (!properties || Object.keys(properties).length === 0) {
-    return '';
+    return "";
   }
 
   const fields = Object.entries(properties)
-    .filter(([_, value]) => value !== null && value !== '')
+    .filter(([_, value]) => value !== null && value !== "")
     .map(([key, value]) => {
       if (Array.isArray(value)) {
-        return `<strong>${formatKey(key)}</strong>: ${value.join(', ')}`;
+        return `<strong>${formatKey(key)}</strong>: ${value.join(", ")}`;
       }
       return `<strong>${formatKey(key)}</strong>: ${value}`;
     });
 
   return `<div style="max-width: 300px; padding: 8px;">
-    ${fields.join('<br>')}
+    ${fields.join("<br>")}
   </div>`;
 }
 
 function formatKey(key: string): string {
   return key
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export function NetworkGraph() {
@@ -184,12 +201,14 @@ export function NetworkGraph() {
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [isPhysicsEnabled, setIsPhysicsEnabled] = useState(true);
   const physicsStateRef = useRef(isPhysicsEnabled);
-  const [graphData, setGraphData] = useState<{ nodes: any[]; edges: any[]; } | null>(null);
+  const [graphData, setGraphData] = useState<{
+    nodes: any[];
+    edges: any[];
+  } | null>(null);
   const [dataTransformed, setDataTransformed] = useState<any>([]);
   const dataTransformedRef = useRef(dataTransformed);
   const [applicationData, setApplicationData] = useState<any>({});
   const [flowData, setFlowData] = useState<any>({});
-
 
   useEffect(() => {
     dataTransformedRef.current = dataTransformed;
@@ -203,13 +222,14 @@ export function NetworkGraph() {
     //console.log("RESULTS ",results)
     setDataTransformed(transformData(results));
 
-    results.forEach(record => {
+    results.forEach((record) => {
       const nodeA = record.a;
       const nodeB = record.b;
       const relationship = record.e;
 
       if (nodeA && !nodes.has(nodeA.elementId)) {
-        const label = nodeA.properties.name || nodeA.properties.nickname || 'Unnamed';
+        const label =
+          nodeA.properties.name || nodeA.properties.nickname || "Unnamed";
         nodes.set(nodeA.elementId, {
           id: nodeA.elementId,
           label: label,
@@ -219,7 +239,8 @@ export function NetworkGraph() {
       }
 
       if (nodeB && !nodes.has(nodeB.elementId)) {
-        const label = nodeB.properties.name || nodeB.properties.nickname || 'Unnamed';
+        const label =
+          nodeB.properties.name || nodeB.properties.nickname || "Unnamed";
         nodes.set(nodeB.elementId, {
           id: nodeB.elementId,
           label: label,
@@ -228,7 +249,11 @@ export function NetworkGraph() {
         });
       }
 
-      if (relationship && relationship.startNodeElementId && relationship.endNodeElementId) {
+      if (
+        relationship &&
+        relationship.startNodeElementId &&
+        relationship.endNodeElementId
+      ) {
         edges.push({
           id: relationship.elementId,
           from: relationship.startNodeElementId,
@@ -264,7 +289,7 @@ export function NetworkGraph() {
         ams_portal: data.ams_portal || "",
         links_to_documentation: data.links_to_documentation || "",
         ams_type: data.ams_type || "",
-        decommission_date: data.decommission_date || null
+        decommission_date: data.decommission_date || null,
       };
 
       await handleSaveApplication(transformedData);
@@ -279,7 +304,7 @@ export function NetworkGraph() {
       const transformedData = {
         ...data,
         //notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-        release_date: data.release_date || null
+        release_date: data.release_date || null,
       };
 
       //console.log("Data -> ", transformedData)
@@ -376,41 +401,45 @@ export function NetworkGraph() {
           RETURN a
       `;
 
-      const result = await executeQuery(Object.keys(applicationData).length === 0 ? createNodeQuery : editNodeQuery, data);
+      const result = await executeQuery(
+        Object.keys(applicationData).length === 0
+          ? createNodeQuery
+          : editNodeQuery,
+        data
+      );
 
-        if (result && result.length > 0) {
+      if (result && result.length > 0) {
+        if (Object.keys(applicationData).length === 0) {
+          const newNode = result[0].a;
 
-
-          if(Object.keys(applicationData).length === 0){
-
-            const newNode = result[0].a;
-          
           if (networkRef.current) {
             const nodeData = {
               id: newNode.elementId,
               label: newNode.properties.name,
               title: createNodeTooltip(newNode.properties),
-              group: 'application'
+              group: "application",
             };
-            
+
             networkRef.current.body.data.nodes.add(nodeData);
             currentDataRef.current.nodes.set(newNode.elementId, nodeData);
           }
 
-          const newApp =  transformData(result);
+          const newApp = transformData(result);
           const newAppKey = newNode.elementId;
 
-          setDataTransformed({...dataTransformed, [newAppKey]: newApp[newNode.elementId]});
-  
-          toast.success("Application added successfully");
-          }else{
-            toast.success("Application edited successfully");
-          }
+          setDataTransformed({
+            ...dataTransformed,
+            [newAppKey]: newApp[newNode.elementId],
+          });
 
-          handleQueryResults;
-          setIsApplicationDialogOpen(false);
+          toast.success("Application added successfully");
+        } else {
+          toast.success("Application edited successfully");
         }
-        
+
+        handleQueryResults;
+        setIsApplicationDialogOpen(false);
+      }
     } catch (error) {
       console.error("Error saving application:", error);
       toast.error("Failed to save application: " + (error as Error).message);
@@ -476,42 +505,45 @@ export function NetworkGraph() {
         `;
 
       //console.log("Data submit ", data)
-      const result = await executeQuery(Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery, data);
+      const result = await executeQuery(
+        Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery,
+        data
+      );
 
-        if (result && result.length > 0) {
-          //console.log("Result ", result)
+      if (result && result.length > 0) {
+        //console.log("Result ", result)
 
+        if (Object.keys(flowData).length === 0) {
+          const newNode = result[0].a;
 
-          if(Object.keys(flowData).length === 0){
-
-            const newNode = result[0].a;
-          
           if (networkRef.current) {
             const nodeData = {
               id: newNode.elementId,
               label: newNode.properties.name,
               title: createNodeTooltip(newNode.properties),
-              group: 'flow'
+              group: "flow",
             };
-            
+
             networkRef.current.body.data.nodes.add(nodeData);
             currentDataRef.current.nodes.set(newNode.elementId, nodeData);
           }
 
-          const newApp =  transformData(result);
+          const newApp = transformData(result);
           const newAppKey = newNode.elementId;
 
-          setDataTransformed({...dataTransformed, [newAppKey]: newApp[newNode.elementId]});
-  
-          toast.success("Flow added successfully");
-          }else{
-            toast.success("Flow edited successfully");
-          }
+          setDataTransformed({
+            ...dataTransformed,
+            [newAppKey]: newApp[newNode.elementId],
+          });
 
-          handleQueryResults;
-          setIsFlowDialogOpen(false);
+          toast.success("Flow added successfully");
+        } else {
+          toast.success("Flow edited successfully");
         }
-        
+
+        handleQueryResults;
+        setIsFlowDialogOpen(false);
+      }
     } catch (error) {
       console.error("Error saving application:", error);
       toast.error("Failed to save application: " + (error as Error).message);
@@ -525,24 +557,24 @@ export function NetworkGraph() {
       const newPhysicsState = !isPhysicsEnabled;
       setIsPhysicsEnabled(newPhysicsState);
       physicsStateRef.current = newPhysicsState;
-      
-      networkRef.current.setOptions({ 
-        physics: { 
-          enabled: newPhysicsState 
-        }
+
+      networkRef.current.setOptions({
+        physics: {
+          enabled: newPhysicsState,
+        },
       });
     }
   }, [isPhysicsEnabled]);
 
   const expandNode = async (nodeId: string) => {
     if (!networkRef.current) return;
-    
+
     setIsLoading(true);
     try {
       networkRef.current.setOptions({ physics: { enabled: false } });
-      
+
       const sourceNodePosition = networkRef.current.getPosition(nodeId);
-      
+
       const results = await executeQuery(
         `
         MATCH (source)-[r]-(target)
@@ -565,14 +597,19 @@ export function NetworkGraph() {
       const radius = 200;
       const angleStep = (2 * Math.PI) / results.length;
 
-      setDataTransformed(transformData(results));
+      const newData = transformData(results);
+
+      setDataTransformed((prev: any) => ({
+        ...prev,
+        ...newData,
+      }));
 
       results.forEach((record, index) => {
         const nodeA = record.a;
         const nodeB = record.b;
         const relationship = record.e;
 
-        [nodeA, nodeB].forEach(node => {
+        [nodeA, nodeB].forEach((node) => {
           if (node && !currentDataRef.current.nodes.has(node.elementId)) {
             const angle = angleStep * index;
             const x = sourceNodePosition.x + radius * Math.cos(angle);
@@ -580,7 +617,8 @@ export function NetworkGraph() {
 
             const nodeData = {
               id: node.elementId,
-              label: node.properties.name || node.properties.nickname || 'Unnamed',
+              label:
+                node.properties.name || node.properties.nickname || "Unnamed",
               title: createNodeTooltip(node.properties),
               group: node.labels[0].toLowerCase(),
               x: x,
@@ -591,7 +629,10 @@ export function NetworkGraph() {
           }
         });
 
-        if (relationship && !currentDataRef.current.edges.has(relationship.elementId)) {
+        if (
+          relationship &&
+          !currentDataRef.current.edges.has(relationship.elementId)
+        ) {
           const edgeData = {
             id: relationship.elementId,
             from: relationship.startNodeElementId,
@@ -623,14 +664,13 @@ export function NetworkGraph() {
                   iterations: 50,
                   updateInterval: 25,
                   onlyDynamicEdges: false,
-                  fit: false
-                }
-              }
+                  fit: false,
+                },
+              },
             });
           }
         }, 500);
       }
-
     } catch (error) {
       console.error("Error expanding node:", error);
     } finally {
@@ -647,20 +687,26 @@ export function NetworkGraph() {
       }
 
       currentDataRef.current.nodes = new Map(
-        graphData.nodes.map(node => [node.id, node])
+        graphData.nodes.map((node) => [node.id, node])
       );
       currentDataRef.current.edges = new Map(
-        graphData.edges.map(edge => [edge.id, edge])
+        graphData.edges.map((edge) => [edge.id, edge])
       );
 
-      networkRef.current = new Network(containerRef.current, graphData, options);
+      networkRef.current = new Network(
+        containerRef.current,
+        graphData,
+        options
+      );
 
       networkRef.current.on("dragStart", () => {
         networkRef.current?.setOptions({ physics: { enabled: false } });
       });
 
       networkRef.current.on("dragEnd", () => {
-        networkRef.current?.setOptions({ physics: { enabled: physicsStateRef.current } });
+        networkRef.current?.setOptions({
+          physics: { enabled: physicsStateRef.current },
+        });
       });
 
       networkRef.current.on("doubleClick", (params) => {
@@ -671,14 +717,13 @@ export function NetworkGraph() {
 
       //Test per far visualizzare la modale di modifica
       networkRef.current.on("oncontext", (params) => {
-
         params.event.preventDefault();
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0];
           const nodeData = dataTransformedRef.current[nodeId];
           setApplicationData(nodeData);
           //console.log('Clicked node data:', nodeData);
-          setIsApplicationDialogOpen(true)
+          setIsApplicationDialogOpen(true);
         }
 
         if (params.edges.length > 0 && params.nodes.length === 0) {
@@ -686,14 +731,13 @@ export function NetworkGraph() {
           const edgeData = dataTransformedRef.current[edgeId];
           setFlowData(edgeData);
           //console.log('Clicked edge data:', edgeData);
-          setIsFlowDialogOpen(true)
+          setIsFlowDialogOpen(true);
         }
       });
 
       networkRef.current.once("afterDrawing", () => {
         networkRef.current?.fit();
       });
-
     } catch (error) {
       console.error("Error initializing network:", error);
     }
@@ -735,8 +779,8 @@ export function NetworkGraph() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="icon"
                 onClick={() => setIsApplicationDialogOpen(true)}
               >
@@ -750,7 +794,11 @@ export function NetworkGraph() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={() => setIsFlowDialogOpen(true)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsFlowDialogOpen(true)}
+              >
                 <Line className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -761,7 +809,7 @@ export function NetworkGraph() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
+              <Button
                 variant={isPhysicsEnabled ? "default" : "outline"}
                 size="icon"
                 onClick={togglePhysics}
@@ -788,57 +836,75 @@ export function NetworkGraph() {
         <QueryInput onQueryResults={handleQueryResults} />
       </div>
 
-      <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]" aria-describedby="dialog-description">
+      <Dialog
+        open={isApplicationDialogOpen}
+        onOpenChange={setIsApplicationDialogOpen}
+      >
+        <DialogContent
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
+          aria-describedby="dialog-description"
+        >
           <DialogHeader>
-            <DialogTitle>{Object.keys(applicationData).length === 0 ? "Add new application" : "Edit application"}</DialogTitle>
+            <DialogTitle>
+              {Object.keys(applicationData).length === 0
+                ? "Add new application"
+                : "Edit application"}
+            </DialogTitle>
           </DialogHeader>
           <p id="dialog-description" className="sr-only">
-            Use this form to create a new application and add it to the network graph.
+            Use this form to create a new application and add it to the network
+            graph.
           </p>
           <ScrollArea className="flex-1 px-4">
             <div className="py-4">
-              <ApplicationForm onSubmit={handleApplicationSubmit} data={applicationData}/>
+              <ApplicationForm
+                onSubmit={handleApplicationSubmit}
+                data={applicationData}
+              />
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsApplicationDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsApplicationDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              form="application-form"
-              disabled={isLoading}
-            >
+            <Button type="submit" form="application-form" disabled={isLoading}>
               Save application
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
       <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]" aria-describedby="dialog-description">
+        <DialogContent
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
+          aria-describedby="dialog-description"
+        >
           <DialogHeader>
-            <DialogTitle>{Object.keys(flowData).length === 0 ? "Add new flow" : "Edit flow"}</DialogTitle>
+            <DialogTitle>
+              {Object.keys(flowData).length === 0
+                ? "Add new flow"
+                : "Edit flow"}
+            </DialogTitle>
           </DialogHeader>
           <p id="dialog-description" className="sr-only">
             Use this form to create a new flow.
           </p>
           <ScrollArea className="flex-1 px-4">
             <div className="py-4">
-              <FlowForm onSubmit={handleFlowSubmit} data={flowData}/>
+              <FlowForm onSubmit={handleFlowSubmit} data={flowData} />
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsFlowDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsFlowDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              form="flow-form"
-              disabled={isLoading}
-            >
+            <Button type="submit" form="flow-form" disabled={isLoading}>
               Save flow
             </Button>
           </DialogFooter>
