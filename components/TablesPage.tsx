@@ -124,7 +124,7 @@ export function TablesPage() {
           ...record.a.properties,
         }))
       );
-      toast.success("Applications data loaded successfully");
+      //toast.success("Applications data loaded successfully");
     } catch (error) {
       console.error("Error fetching applications:", error);
       toast.error("Failed to load applications");
@@ -145,7 +145,7 @@ export function TablesPage() {
           ...record.r.properties,
         }))
       );
-      toast.success("Flows data loaded successfully");
+      //toast.success("Flows data loaded successfully");
     } catch (error) {
       console.error("Error fetching flows:", error);
       toast.error("Failed to load flows");
@@ -335,6 +335,7 @@ export function TablesPage() {
                 .filter(Boolean)
             )
           : "[]",*/
+        ams_contact_phone: data.ams_contact_phone || "",
         ams_expire_date: data.ams_expire_date || null,
         ams_supplier: data.ams_supplier || "",
         ams_portal: data.ams_portal || "",

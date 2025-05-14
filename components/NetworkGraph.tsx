@@ -258,6 +258,7 @@ export function NetworkGraph() {
         ams_contact_phone: data.ams_contact_phone ? JSON.stringify(data.ams_contact_phone.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         smes_factory: data.smes_factory ? JSON.stringify(data.smes_factory.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
         notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",*/
+        ams_contact_phone: data.ams_contact_phone || "",
         ams_expire_date: data.ams_expire_date || null,
         ams_supplier: data.ams_supplier || "",
         ams_portal: data.ams_portal || "",
@@ -329,7 +330,7 @@ export function NetworkGraph() {
           ams_type: $ams_type,
           decommission_date: $decommission_date,
           to_be_decommissioned: $to_be_decommissioned,
-          notes: $notes
+          notes: $notes,
           links_to_sharepoint_documentation: $links_to_sharepoint_documentation
         })
         RETURN a

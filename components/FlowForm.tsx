@@ -55,7 +55,7 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
           label: record.a.properties.name,
         }))
       );
-      toast.success("Applications data loaded successfully");
+      //toast.success("Applications data loaded successfully");
     } catch (error) {
       console.error("Error fetching applications:", error);
       toast.error("Failed to load applications");
