@@ -457,7 +457,8 @@ export function TablesPage() {
             f.average_message_size_in_kb = $average_message_size_in_kb,
             f.api_gateway = $api_gateway,
             f.release_date = $release_date,
-            f.notes = $notes
+            f.notes = $notes,
+            f.labels = $labels
           RETURN f
           `;
 

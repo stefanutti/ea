@@ -444,7 +444,8 @@ export function NetworkGraph() {
           average_message_size_in_kb: $average_message_size_in_kb,
           api_gateway: $api_gateway,
           release_date: $release_date,
-          notes: $notes
+          notes: $notes,
+          labels: $labels
         }]->(target)
         RETURN f
       `;
@@ -468,7 +469,8 @@ export function NetworkGraph() {
           f.average_message_size_in_kb = $average_message_size_in_kb,
           f.api_gateway = $api_gateway,
           f.release_date = $release_date,
-          f.notes = $notes
+          f.notes = $notes,
+          f.labels = $labels
         RETURN f
         `;
 

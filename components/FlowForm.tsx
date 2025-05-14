@@ -34,6 +34,7 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
       api_gateway: false,
       release_date: "",
       notes: "",
+      labels: ""
     },
     mode: "onChange",
     criteriaMode: "all",
@@ -96,9 +97,14 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
     };
   }, [form, debouncedTrigger]);
 
-  /*const validateJsonFields = (data: any): boolean => {
+  const isValidCsvString = (input: string): boolean => {
+    const csvPattern = /^(\s*("[^"]+"|[^",]+)\s*)(,\s*("[^"]+"|[^",]+)\s*)*$/;
+    return csvPattern.test(input);
+  };
+
+  const validateJsonFields = (data: any): boolean => {
     const jsonFields = [
-      '',
+      'labels',
     ];
   
     return jsonFields.every(field => {
@@ -106,16 +112,16 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
       if (!value) return true;
       return isValidCsvString(value);
     });
-  };*/
+  };
 
   const handleSubmit = async (data: any) => {
-    /*if (!validateJsonFields(data)) {
+    if (!validateJsonFields(data)) {
       form.setError('root', {
         type: 'manual',
         message: 'Invalid format in one or more fields.'
       });
       return;
-    }*/
+    }
 
     const transformedData = { ...data };
 
@@ -275,6 +281,14 @@ export function FlowForm({ onSubmit, data }: FlowFormProps) {
                 { value: "out", label: "Out" },
               ]}
             />
+
+            <FormField
+                  form={form}
+                  name="labels"
+                  label="Labels"
+                  type="text"
+                  placeholder="Enter comma-separated values"
+              />
           </div>
 
           {/* Details */}
