@@ -487,6 +487,8 @@ export function NetworkGraph() {
 
         SET
           f.name = $name,
+          f.initiator_application = $initiator_application,
+          f.target_application = $target_application,
           f.description = $description,
           f.communication_mode = $communication_mode,
           f.intent = $intent,
@@ -504,28 +506,30 @@ export function NetworkGraph() {
         RETURN f
         `;
 
-      //console.log("Data submit ", data)
+      //console.log("Data submit ", data);
       const result = await executeQuery(
         Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery,
         data
       );
 
       if (result && result.length > 0) {
-        //console.log("Result ", result)
+        //console.log("Result ", result);
 
         if (Object.keys(flowData).length === 0) {
-          const newNode = result[0].a;
+          const newNode = result[0].f;
 
           if (networkRef.current) {
-            const nodeData = {
+            const edgeData = {
               id: newNode.elementId,
-              label: newNode.properties.name,
-              title: createNodeTooltip(newNode.properties),
-              group: "flow",
+              from: newNode.startNodeElementId,
+              to: newNode.endNodeElementId,
+              label: newNode.properties.name || newNode.type,
+              arrows: "to",
+              title: createEdgeTooltip(newNode.properties),
             };
 
-            networkRef.current.body.data.nodes.add(nodeData);
-            currentDataRef.current.nodes.set(newNode.elementId, nodeData);
+            networkRef.current.body.data.edges.add(edgeData);
+            currentDataRef.current.edges.set(newNode.elementId, edgeData);
           }
 
           const newApp = transformData(result);
