@@ -564,6 +564,8 @@ export function NetworkGraph() {
       const radius = 200;
       const angleStep = (2 * Math.PI) / results.length;
 
+      setDataTransformed(transformData(results));
+
       results.forEach((record, index) => {
         const nodeA = record.a;
         const nodeB = record.b;
