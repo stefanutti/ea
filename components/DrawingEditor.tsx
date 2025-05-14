@@ -126,12 +126,18 @@ export function DrawingEditor() {
 
       try {
         const snapshot = editor.store.getSnapshot();
-        const { error } = await supabase
+        const { version, id } = selected;
+        const newVersion = version + 1;
+
+        const { data, error } = await supabase
           .from("ea-drawings")
-          .update({ drawings: snapshot })
-          .eq("id", selected.id);
+          .update({ drawings: snapshot, version: newVersion })
+          .eq("id", id)
+          .select();
 
         if (error) throw error;
+
+        setSelected((prev: any) => ({ ...prev, version: newVersion, drawings: snapshot }));
 
         toast.success("Drawing updated");
         fetchDrawings();
