@@ -7,6 +7,7 @@ import {
   Tldraw,
   TldrawUiMenuGroup,
   TldrawUiMenuItem,
+  loadSnapshot
 } from "tldraw";
 import "tldraw/tldraw.css";
 import {
@@ -32,7 +33,23 @@ import { supabase } from "@/lib/supabase";
 
 export function DrawingEditor() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [drawings, setDrawings] = useState<any[]>([]);
   const editorRef = useRef<any>(null);
+
+  useEffect(() => {
+    fetchDrawings();
+  }, []);
+
+  const fetchDrawings = async () => {
+    const { data, error } = await supabase.from("ea-drawings").select("*");
+
+    if (error) {
+      console.error("Errore nel recupero dei drawings:", error.message);
+      toast.error("Errore nel recupero dei disegni");
+    } else {
+      setDrawings(data);
+    }
+  };
 
   const saveDrawing = async (obj: any) => {
     const editor = editorRef.current;
@@ -99,26 +116,51 @@ export function DrawingEditor() {
   };
 
   function SelectDrawing() {
-  const [selected, setSelected] = useState("default");
+    const [selected, setSelected] = useState<any>();
 
-  return (
-    <div
-      className="absolute bottom-3 right-2 z-[1000] bg-none rounded-md shadow-md"
-      style={{ pointerEvents: "auto" }}
-    >
-      <Select onValueChange={(value) => setSelected(value)} defaultValue={selected}>
-        <SelectTrigger className="w-[180px] border-none shadow-lg bg-background focus:ring-0 focus:outline-none rounded-md">
-          <SelectValue placeholder="Seleziona azione" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">Seleziona disegno</SelectItem>
-          <SelectItem value="mode1">Disegno1</SelectItem>
-          <SelectItem value="mode2">Disegno2</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
+    const handleSelectChange = async (value: any) => {
+  try {
+    const snapshot = typeof value === "string" ? JSON.parse(value) : value;
+    const editor = editorRef.current;
+
+    if (editor && snapshot) {
+      loadSnapshot(editor.store, snapshot);
+
+      requestAnimationFrame(() => {
+        editor.setCamera({ x: 0, y: 0, z: 1 });
+        editor.zoomToFit();
+      });
+
+      toast.success("Disegno caricato!");
+    }
+  } catch (err) {
+    console.error("Errore nel parsing/caricamento del disegno:", err);
+    toast.error("Errore nel caricamento del disegno");
+  }
+
+  setSelected(value);
+};
+
+    return (
+      <div
+        className="absolute bottom-3 right-2 z-[1000] bg-none rounded-md shadow-md"
+        style={{ pointerEvents: "auto" }}
+      >
+        <Select onValueChange={handleSelectChange} defaultValue={selected}>
+          <SelectTrigger className="w-[180px] border-none shadow-lg bg-background focus:ring-0 focus:outline-none rounded-md">
+            <SelectValue placeholder="Edit Drawing" />
+          </SelectTrigger>
+          <SelectContent>
+            {drawings.map((drawing) => (
+              <SelectItem key={drawing.id} value={drawing.drawings}>
+                {drawing.filename}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   const components: TLComponents = {
     QuickActions: SaveButton,
