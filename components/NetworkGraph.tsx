@@ -212,8 +212,7 @@ export function NetworkGraph() {
   const [flowData, setFlowData] = useState<any>({});
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState({
     show: false,
-    type: "",
-    id: "",
+    data: {}
   });
 
   useEffect(() => {
@@ -562,41 +561,48 @@ export function NetworkGraph() {
     }
   };
 
-  const handleDelete = async (type: string, id: string) => {
-    if (!id || !type) return;
+  const handleDelete = async (data: any) => {
+    if (!data) return;
+
+    const {elementId, type} = data;
+
+    console.log(elementId, type)
 
     setIsLoading(true);
 
-    if (type == "application") {
-
+    if (type == "flow") {
       try {
-        const deleteAppQuery = `MATCH (n:Application { application_id: "${id}" }) DELETE n`;
-        const result = await executeQuery(deleteAppQuery, {});
-
-        if(result){
-          setIsConfirmModalOpen({ show: false, type: "", id: "" });
-          toast.success('Application deleted')
-        }
-
-        console.log(result);
-      } catch (err) {
-        toast.error("Error deleting the application");
-      }
-
-    } else if (type == "flow") {
-
-      try {
-        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${id}" DELETE r`;
+        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${data.flow_id}" DELETE r`;
         const result = await executeQuery(deleteFlowQuery, {});
 
-        if(result){
-          setIsConfirmModalOpen({ show: false, type: "", id: "" });
-          toast.success('Flow deleted')
+        if (result) {
+          setIsConfirmModalOpen({ show: false, data: {} });
+          toast.success("Flow deleted");
+
+          if (networkRef.current) {
+            networkRef.current.body.data.edges.remove(elementId);
+          }
         }
       } catch (err) {
         toast.error("Error deleting the flow");
       }
+    } else if(type == 'application'){
+      try {
+        const deleteAppQuery = `MATCH (n:Application { application_id: "${data.application_id}" }) DELETE n`;
+        const result = await executeQuery(deleteAppQuery, {});
 
+        if (result) {
+          setIsConfirmModalOpen({ show: false, data: {} });
+          toast.success("Application deleted");
+
+          if (networkRef.current) {
+            networkRef.current.body.data.nodes.remove(elementId);
+          }
+
+        }
+      } catch (err) {
+        toast.error("Error deleting the application");
+      }
     }
   };
 
@@ -763,12 +769,15 @@ export function NetworkGraph() {
         }
       });
 
-      //Test per far visualizzare la modale di modifica
+      //Visualizzare la modale di modifica
       networkRef.current.on("oncontext", (params) => {
         params.event.preventDefault();
         if (params.nodes.length > 0) {
+          console.log(params)
           const nodeId = params.nodes[0];
           const nodeData = dataTransformedRef.current[nodeId];
+          nodeData["elementId"] = nodeId;
+          nodeData["type"] = 'application';
           const appData = {
             nodeData,
             hasRelationship: params.edges.length > 0 ? true : false,
@@ -780,6 +789,7 @@ export function NetworkGraph() {
         if (params.edges.length > 0 && params.nodes.length === 0) {
           const edgeId = params.edges[0];
           const edgeData = dataTransformedRef.current[edgeId];
+          edgeData["elementId"] = edgeId;
           setFlowData(edgeData);
           //console.log('Clicked edge data:', edgeData);
           setIsFlowDialogOpen(true);
@@ -923,8 +933,7 @@ export function NetworkGraph() {
                   onClick={() => {
                     setIsConfirmModalOpen({
                       show: true,
-                      type: "application",
-                      id: applicationData.nodeData.application_id,
+                      data: applicationData.nodeData,
                     });
                     setIsApplicationDialogOpen(false);
                   }}
@@ -982,8 +991,7 @@ export function NetworkGraph() {
                   onClick={() => {
                     setIsConfirmModalOpen({
                       show: true,
-                      type: "flow",
-                      id: flowData.flow_id,
+                      data: flowData,
                     });
                     setIsFlowDialogOpen(false);
                   }}
@@ -1011,12 +1019,10 @@ export function NetworkGraph() {
 
       <ConfirmModal
         isOpen={isConfirmModalOpen.show}
-        onClose={() => setIsConfirmModalOpen({ show: false, type: "", id: "" })}
-        onConfirm={() =>
-          handleDelete(isConfirmModalOpen.type, isConfirmModalOpen.id)
-        }
-        title={`Delete ${isConfirmModalOpen.type}`}
-        description={`Are you sure you want to delete this ${isConfirmModalOpen.type}? This action cannot be undone.`}
+        onClose={() => setIsConfirmModalOpen({ show: false, data: {}})}
+        onConfirm={() => handleDelete(isConfirmModalOpen.data)}
+        title={`Delete ${isConfirmModalOpen.data.type}`}
+        description={`Are you sure you want to delete this ${isConfirmModalOpen.data.type}? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
       />

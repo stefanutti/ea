@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { ApplicationForm } from "./ApplicationForm";
 import { FlowForm } from "./FlowForm";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ConfirmModal } from "./ConfirmModal";
 
 type SortConfig = {
   key: string;
@@ -110,11 +111,15 @@ export function TablesPage() {
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [applicationData, setApplicationData] = useState<any>({});
   const [flowData, setFlowData] = useState<any>({});
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState({
+    show: false,
+    data: {},
+  });
 
   const fetchApplications = async () => {
     try {
       const results = await executeQuery(
-        "MATCH (a:Application) RETURN a",
+        "MATCH (a:Application) OPTIONAL MATCH (a)-[r]-() RETURN a, COUNT(r) > 0 AS hasRelations",
         {},
         new AbortController().signal
       );
@@ -122,6 +127,8 @@ export function TablesPage() {
       setApplications(
         results.map((record) => ({
           id: record.a.elementId,
+          type: "application",
+          hasRelationship: record.hasRelations,
           ...record.a.properties,
         }))
       );
@@ -143,6 +150,7 @@ export function TablesPage() {
       setFlows(
         results.map((record) => ({
           id: record.r.elementId,
+          type: "flow",
           ...record.r.properties,
         }))
       );
@@ -227,36 +235,36 @@ export function TablesPage() {
     return String(value);
   };
 
- function cleanObj(obj: any): Record<string, any> {
-  const result: Record<string, any> = {};
+  function cleanObj(obj: any): Record<string, any> {
+    const result: Record<string, any> = {};
 
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
 
-        if (Array.isArray(parsed)) {
-          const cleanArray = parsed
-            .map((v) => v?.toString().trim())
-            .filter((v) => v && v !== "[]");
+          if (Array.isArray(parsed)) {
+            const cleanArray = parsed
+              .map((v) => v?.toString().trim())
+              .filter((v) => v && v !== "[]");
 
-          result[key] = cleanArray.length > 0 ? cleanArray.join(",") : "";
-          continue;
-        }
-      } catch {
+            result[key] = cleanArray.length > 0 ? cleanArray.join(",") : "";
+            continue;
+          }
+        } catch {}
       }
+
+      result[key] = value;
     }
 
-    result[key] = value;
+    return result;
   }
 
-  return result;
-}
-
   const openDialog = (tableShown: string) => {
-
     if (tableShown == "applications") {
-      setApplicationData(cleanObj(applications.find((obj) => obj.id === selectedRowId)));
+      setApplicationData(
+        cleanObj(applications.find((obj) => obj.id === selectedRowId))
+      );
       setFlowData({});
       setIsApplicationDialogOpen(true);
     } else {
@@ -479,6 +487,43 @@ export function TablesPage() {
     }
   };
 
+  const handleDelete = async (data: any) => {
+    if (!data) return;
+
+    const { type } = data;
+
+    setIsLoading(true);
+
+    if (type == "flow") {
+      try {
+        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${data.flow_id}" DELETE r`;
+        const result = await executeQuery(deleteFlowQuery, {});
+
+        if (result) {
+          setIsConfirmModalOpen({ show: false, data: {} });
+          toast.success("Flow deleted");
+        }
+      } catch (err) {
+        toast.error("Error deleting the flow");
+      }
+    } else if (type == "application") {
+      try {
+        const deleteAppQuery = `MATCH (n:Application { application_id: "${data.application_id}" }) DELETE n`;
+        const result = await executeQuery(deleteAppQuery, {});
+
+        if (result) {
+          setIsConfirmModalOpen({ show: false, data: {} });
+          toast.success("Application deleted");
+        }
+      } catch (err) {
+        toast.error("Error deleting the application");
+      }
+    }
+
+    fetchAllData();
+    setIsLoading(false);
+  };
+
   const renderTable = (data: TableData[]) => {
     const filteredData = filterData(data);
     const sortedData = sortData(filteredData);
@@ -547,7 +592,7 @@ export function TablesPage() {
                   <TableBody>
                     {sortedData.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="text-center">                        
+                        <TableCell className="text-center">
                           <input
                             type="radio"
                             name="selectRow"
@@ -628,16 +673,41 @@ export function TablesPage() {
               />
             </div>
           </ScrollArea>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsApplicationDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" form="application-form" disabled={isLoading}>
-              Save application
-            </Button>
+          <DialogFooter className="mt-4 w-full">
+            <div className="flex w-full justify-between items-center">
+              {Object.keys(applicationData).length > 0 &&
+              applicationData.hasRelationship == false ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setIsConfirmModalOpen({
+                      show: true,
+                      data: applicationData,
+                    });
+                    setIsApplicationDialogOpen(false);
+                  }}
+                >
+                  Delete application
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsApplicationDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="application-form"
+                  disabled={isLoading}
+                >
+                  Save application
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -658,19 +728,49 @@ export function TablesPage() {
               <FlowForm onSubmit={handleFlowSubmit} data={flowData} />
             </div>
           </ScrollArea>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsFlowDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" form="flow-form" disabled={isLoading}>
-              Save flow
-            </Button>
+          <DialogFooter className="mt-4 w-full">
+            <div className="flex w-full justify-between items-center">
+              {Object.keys(flowData).length > 0 ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setIsConfirmModalOpen({
+                      show: true,
+                      data: flowData,
+                    });
+                    setIsFlowDialogOpen(false);
+                  }}
+                >
+                  Delete flow
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFlowDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" form="flow-form" disabled={isLoading}>
+                  Save flow
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen.show}
+        onClose={() => setIsConfirmModalOpen({ show: false, data: {} })}
+        onConfirm={() => handleDelete(isConfirmModalOpen.data)}
+        title={`Delete ${isConfirmModalOpen.data.type}`}
+        description={`Are you sure you want to delete this ${isConfirmModalOpen.data.type}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </>
   );
 }
