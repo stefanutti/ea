@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { ApplicationForm } from "./ApplicationForm";
 import { FlowForm } from "./FlowForm";
+import { ConfirmModal } from "./ConfirmModal";
 import {
   Tooltip,
   TooltipContent,
@@ -209,6 +210,11 @@ export function NetworkGraph() {
   const dataTransformedRef = useRef(dataTransformed);
   const [applicationData, setApplicationData] = useState<any>({});
   const [flowData, setFlowData] = useState<any>({});
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState({
+    show: false,
+    type: "",
+    id: "",
+  });
 
   useEffect(() => {
     dataTransformedRef.current = dataTransformed;
@@ -457,7 +463,7 @@ export function NetworkGraph() {
         MATCH (initiator:Application {application_id: $initiator_application})
         MATCH (target:Application {application_id: $target_application})
 
-        CREATE (initiator)-[f:technical_flow {
+        CREATE (initiator)-[f:flow {
           flow_id: $flow_id,
           name: $name,
           description: $description,
@@ -483,7 +489,7 @@ export function NetworkGraph() {
       const editFlowQuery = `
         MATCH (initiator:Application {application_id: $initiator_application})
         MATCH (target:Application {application_id: $target_application})
-        MATCH (initiator)-[f:technical_flow]->(target)
+        MATCH (initiator)-[f:flow]->(target)
 
         SET
           f.name = $name,
@@ -553,6 +559,44 @@ export function NetworkGraph() {
       toast.error("Failed to save application: " + (error as Error).message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (type: string, id: string) => {
+    if (!id || !type) return;
+
+    setIsLoading(true);
+
+    if (type == "application") {
+
+      try {
+        const deleteAppQuery = `MATCH (n:Application { application_id: "${id}" }) DELETE n`;
+        const result = await executeQuery(deleteAppQuery, {});
+
+        if(result){
+          setIsConfirmModalOpen({ show: false, type: "", id: "" });
+          toast.success('Application deleted')
+        }
+
+        console.log(result);
+      } catch (err) {
+        toast.error("Error deleting the application");
+      }
+
+    } else if (type == "flow") {
+
+      try {
+        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${id}" DELETE r`;
+        const result = await executeQuery(deleteFlowQuery, {});
+
+        if(result){
+          setIsConfirmModalOpen({ show: false, type: "", id: "" });
+          toast.success('Flow deleted')
+        }
+      } catch (err) {
+        toast.error("Error deleting the flow");
+      }
+
     }
   };
 
@@ -725,8 +769,11 @@ export function NetworkGraph() {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0];
           const nodeData = dataTransformedRef.current[nodeId];
-          setApplicationData(nodeData);
-          //console.log('Clicked node data:', nodeData);
+          const appData = {
+            nodeData,
+            hasRelationship: params.edges.length > 0 ? true : false,
+          };
+          setApplicationData(appData);
           setIsApplicationDialogOpen(true);
         }
 
@@ -863,20 +910,46 @@ export function NetworkGraph() {
             <div className="py-4">
               <ApplicationForm
                 onSubmit={handleApplicationSubmit}
-                data={applicationData}
+                data={applicationData.nodeData}
               />
             </div>
           </ScrollArea>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsApplicationDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" form="application-form" disabled={isLoading}>
-              Save application
-            </Button>
+          <DialogFooter className="mt-4 w-full">
+            <div className="flex w-full justify-between items-center">
+              {Object.keys(applicationData).length > 0 &&
+              applicationData.hasRelationship == false ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setIsConfirmModalOpen({
+                      show: true,
+                      type: "application",
+                      id: applicationData.nodeData.application_id,
+                    });
+                    setIsApplicationDialogOpen(false);
+                  }}
+                >
+                  Delete application
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsApplicationDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="application-form"
+                  disabled={isLoading}
+                >
+                  Save application
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -901,19 +974,52 @@ export function NetworkGraph() {
               <FlowForm onSubmit={handleFlowSubmit} data={flowData} />
             </div>
           </ScrollArea>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsFlowDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" form="flow-form" disabled={isLoading}>
-              Save flow
-            </Button>
+          <DialogFooter className="mt-4 w-full">
+            <div className="flex w-full justify-between items-center">
+              {Object.keys(flowData).length > 0 ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setIsConfirmModalOpen({
+                      show: true,
+                      type: "flow",
+                      id: flowData.flow_id,
+                    });
+                    setIsFlowDialogOpen(false);
+                  }}
+                >
+                  Delete flow
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFlowDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" form="flow-form" disabled={isLoading}>
+                  Save flow
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen.show}
+        onClose={() => setIsConfirmModalOpen({ show: false, type: "", id: "" })}
+        onConfirm={() =>
+          handleDelete(isConfirmModalOpen.type, isConfirmModalOpen.id)
+        }
+        title={`Delete ${isConfirmModalOpen.type}`}
+        description={`Are you sure you want to delete this ${isConfirmModalOpen.type}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

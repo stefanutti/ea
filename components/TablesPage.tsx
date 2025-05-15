@@ -443,7 +443,7 @@ export function TablesPage() {
       const editFlowQuery = `
           MATCH (initiator:Application {application_id: $initiator_application})
           MATCH (target:Application {application_id: $target_application})
-          MATCH (initiator)-[f:technical_flow]->(target)
+          MATCH (initiator)-[f:flow]->(target)
   
           SET
             f.name = $name,
