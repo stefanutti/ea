@@ -84,6 +84,7 @@ const flowColumns = [
   "message_format",
   "data_flow",
   "protocol",
+  "labels",
   "frequency",
   "estimated_calls_per_day",
   "average_execution_time_in_sec",
@@ -134,7 +135,7 @@ export function TablesPage() {
   const fetchFlows = async () => {
     try {
       const results = await executeQuery(
-        "MATCH ()-[r:technical_flow]->() RETURN r",
+        "MATCH ()-[r:flow]->() RETURN r",
         {},
         new AbortController().signal
       );
