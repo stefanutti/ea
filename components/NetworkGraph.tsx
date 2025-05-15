@@ -205,7 +205,7 @@ export function NetworkGraph() {
   const [graphData, setGraphData] = useState<{
     nodes: any[];
     edges: any[];
-  } | null>(null);
+  } | null>({nodes: [], edges : []});
   const [dataTransformed, setDataTransformed] = useState<any>([]);
   const dataTransformedRef = useRef(dataTransformed);
   const [applicationData, setApplicationData] = useState<any>({});
@@ -214,7 +214,6 @@ export function NetworkGraph() {
     show: false,
     data: {}
   });
-  const [pendingDelete, setPendingDelete] = useState<any | null>(null);
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
