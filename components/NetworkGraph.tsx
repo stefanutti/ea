@@ -214,11 +214,7 @@ export function NetworkGraph() {
     show: false,
     data: {}
   });
-
-  useEffect(() => {
-    dataTransformedRef.current = dataTransformed;
-    //console.log(dataTransformedRef.current);
-  }, [dataTransformed]);
+  const [pendingDelete, setPendingDelete] = useState<any | null>(null);
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
@@ -561,12 +557,10 @@ export function NetworkGraph() {
     }
   };
 
-  const handleDelete = async (data: any) => {
+  const handleDeleteButton = async (data: any) => {
     if (!data) return;
 
     const {elementId, type} = data;
-
-    console.log(elementId, type)
 
     setIsLoading(true);
 
@@ -576,7 +570,6 @@ export function NetworkGraph() {
         const result = await executeQuery(deleteFlowQuery, {});
 
         if (result) {
-          setIsConfirmModalOpen({ show: false, data: {} });
           toast.success("Flow deleted");
 
           if (networkRef.current) {
@@ -592,7 +585,6 @@ export function NetworkGraph() {
         const result = await executeQuery(deleteAppQuery, {});
 
         if (result) {
-          setIsConfirmModalOpen({ show: false, data: {} });
           toast.success("Application deleted");
 
           if (networkRef.current) {
@@ -604,6 +596,10 @@ export function NetworkGraph() {
         toast.error("Error deleting the application");
       }
     }
+
+    setIsConfirmModalOpen({ show: false, data: {} });
+    setIsLoading(false);
+
   };
 
   const togglePhysics = useCallback(() => {
@@ -773,7 +769,6 @@ export function NetworkGraph() {
       networkRef.current.on("oncontext", (params) => {
         params.event.preventDefault();
         if (params.nodes.length > 0) {
-          console.log(params)
           const nodeId = params.nodes[0];
           const nodeData = dataTransformedRef.current[nodeId];
           nodeData["elementId"] = nodeId;
@@ -833,6 +828,10 @@ export function NetworkGraph() {
       }
     };
   }, []);
+
+    useEffect(() => {
+    dataTransformedRef.current = dataTransformed;
+  }, [dataTransformed]);
 
   return (
     <div className="w-full h-full border rounded-lg bg-card flex flex-col">
@@ -1020,7 +1019,7 @@ export function NetworkGraph() {
       <ConfirmModal
         isOpen={isConfirmModalOpen.show}
         onClose={() => setIsConfirmModalOpen({ show: false, data: {}})}
-        onConfirm={() => handleDelete(isConfirmModalOpen.data)}
+        onConfirm={() => handleDeleteButton(isConfirmModalOpen.data)}
         title={`Delete ${isConfirmModalOpen.data.type}`}
         description={`Are you sure you want to delete this ${isConfirmModalOpen.data.type}? This action cannot be undone.`}
         confirmText="Delete"
