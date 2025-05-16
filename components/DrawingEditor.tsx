@@ -1,12 +1,17 @@
 import {
+  DefaultContextMenu,
+  DefaultContextMenuContent,
   DefaultPageMenu,
   DefaultQuickActions,
   DefaultQuickActionsContent,
   TLComponents,
-  TLUiAssetUrlOverrides,
+  TLUiContextMenuProps,
   Tldraw,
+  TldrawUiMenuGroup,
   TldrawUiMenuItem,
   loadSnapshot,
+  track,
+  useEditor,
 } from "tldraw";
 import "tldraw/tldraw.css";
 import {
@@ -27,18 +32,32 @@ import { SaveDrawingForm } from "./SaveDrawingForm";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [drawings, setDrawings] = useState<any[]>([]);
+  const [showFlowContext, setShowFlowContext] = useState(false);
   const editorRef = useRef<any>(null);
 
   useEffect(() => {
     fetchDrawings();
   }, []);
+
+   const ShapeListener = track(function MetaUiHelper() {
+    const editor = useEditor();
+    const type = editor.getOnlySelectedShape()?.type;
+    if(type == "arrow"){
+      setShowFlowContext(true);
+    }else{
+      setShowFlowContext(false);
+    }
+    return (
+      <></>
+    );
+  });
 
   const fetchDrawings = async () => {
     const { data, error } = await supabase.from("ea-drawings").select("*");
@@ -125,8 +144,10 @@ export function DrawingEditor() {
             className="tlui-menu__item tlui-button tlui-button__menu tlui-button__default"
             title="Edit drawing"
           >
-            <div className={"tlui-button__icon" + (!selected ? " opacity-50" : "")}>
-              <img src="/svg/edit_icon.svg" alt="Edit" className="w-4 h-4"/>
+            <div
+              className={"tlui-button__icon" + (!selected ? " opacity-50" : "")}
+            >
+              <img src="/svg/edit_icon.svg" alt="Edit" className="w-4 h-4" />
             </div>
           </button>
 
@@ -236,10 +257,34 @@ export function DrawingEditor() {
     );
   }
 
+  function CustomContextMenu(props: TLUiContextMenuProps) {
+
+    return (
+      <DefaultContextMenu {...props}>
+
+        <TldrawUiMenuGroup id="flowContext">
+          <div>
+            { showFlowContext &&
+            <TldrawUiMenuItem
+              id="flow"
+              label="Flusso EA"
+              readonlyOk
+              onSelect={() => {
+                alert(showFlowContext);
+              } } />
+            }
+          </div>
+        </TldrawUiMenuGroup>
+        <DefaultContextMenuContent />
+
+      </DefaultContextMenu>
+    );
+  }
+
   const components: TLComponents = {
     QuickActions: customActions,
-    //NavigationPanel: SelectDrawing,
     PageMenu: CustomPageMenu,
+    ContextMenu: CustomContextMenu,
   };
 
   const sortedDrawings = [...drawings].sort((a, b) => {
@@ -254,7 +299,9 @@ export function DrawingEditor() {
           onMount={(editor) => {
             editorRef.current = editor;
           }}
-        />
+        >
+          <ShapeListener />
+        </Tldraw>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
