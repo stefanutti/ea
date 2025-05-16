@@ -83,7 +83,6 @@ export function DrawingEditor() {
   };
 
   function customActions() {
-
     const handleUpdateDrawing = async () => {
       const editor = editorRef.current;
       if (!selected || !editor) return;
@@ -101,7 +100,11 @@ export function DrawingEditor() {
 
         if (error) throw error;
 
-        setSelected((prev: any) => ({ ...prev, version: newVersion, drawings: snapshot }));
+        setSelected((prev: any) => ({
+          ...prev,
+          version: newVersion,
+          drawings: snapshot,
+        }));
 
         toast.success("Drawing updated");
         fetchDrawings();
@@ -114,21 +117,29 @@ export function DrawingEditor() {
     return (
       <DefaultQuickActions>
         <DefaultQuickActionsContent />
-        <div className="flex">
-          <TldrawUiMenuItem
-            onSelect={() => handleUpdateDrawing()}
+        <div className="tlui-buttons__horizontal">
+          <button
+            type="button"
+            onClick={handleUpdateDrawing}
             disabled={!selected}
-            id="update"
-            icon="send-to-back"
-            label="Update drawing"
-          />
+            className="tlui-menu__item tlui-button tlui-button__menu tlui-button__default"
+            title="Edit drawing"
+          >
+            <div className={"tlui-button__icon" + (!selected ? " opacity-50" : "")}>
+              <img src="/svg/edit_icon.svg" alt="Edit" className="w-4 h-4"/>
+            </div>
+          </button>
 
-          <TldrawUiMenuItem
-            id="save"
-            icon="bring-to-front"
-            onSelect={() => setIsDialogOpen(true)}
-            label="Save new drawing"
-          />
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className="tlui-menu__item tlui-button tlui-button__default"
+            title="Save drawing"
+          >
+            <div className="tlui-button__icon">
+              <img src="/svg/save_icon.svg" alt="Save" className="w-4 h-4" />
+            </div>
+          </button>
         </div>
       </DefaultQuickActions>
     );
@@ -180,7 +191,6 @@ export function DrawingEditor() {
         //className="absolute bottom-3 right-2 z-[1000] flex flex-row items-center bg-none rounded-md"
         style={{ pointerEvents: "auto" }}
       >
-
         <Select
           onValueChange={handleSelectChange}
           value={selected ? String(selected.id) : undefined}
@@ -197,7 +207,7 @@ export function DrawingEditor() {
           text-sm font-sm
           text-gray-700
           hover:bg-gray-200
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+          focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500
           border border-transparent
           cursor-pointer
           min-w-[180px]
