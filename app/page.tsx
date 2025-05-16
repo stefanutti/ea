@@ -6,6 +6,7 @@ import { DrawingEditor } from "@/components/DrawingEditor";
 import { HelpPage } from "@/components/HelpPage";
 import { TablesPage } from "@/components/TablesPage";
 import { useState } from "react";
+import { Toaster } from "sonner";
 
 export default function Home() {
   const [activeView, setActiveView] = useState("graph");
@@ -29,6 +30,8 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <Toaster position="bottom-left" />
     </div>
   );
 }

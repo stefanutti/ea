@@ -9,9 +9,10 @@ import debounce from "lodash.debounce";
 
 interface ApplicationFormProps {
   onSubmit: (data: any) => void;
+  data: any
 }
 
-export function ApplicationForm({ onSubmit }: ApplicationFormProps) {
+export function ApplicationForm({ onSubmit, data }: ApplicationFormProps) {
   const form = useForm<any>({
     defaultValues: {
       application_id: crypto.randomUUID(),
@@ -55,6 +56,15 @@ export function ApplicationForm({ onSubmit }: ApplicationFormProps) {
     criteriaMode: "all",
     shouldUnregister: false
   });
+
+  useEffect(() => {
+    if (data) {
+      form.reset({
+        ...form.getValues(), // fallback per campi mancanti
+        ...data
+      });
+    }
+  }, [data, form]);
 
   const debouncedTrigger = useCallback(
     debounce(() => form.trigger(), 500),

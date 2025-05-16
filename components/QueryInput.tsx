@@ -12,7 +12,7 @@ interface QueryInputProps {
 }
 
 export function QueryInput({ onQueryResults }: QueryInputProps) {
-  const [query, setQuery] = useState("MATCH (a)-[e]->(b) WHERE a.name = \"sga\" RETURN a, e, b");
+  const [query, setQuery] = useState("MATCH (a)-[e:flow]->(b) WHERE a.name = \"sga-it\" RETURN a, e, b");
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -31,7 +31,7 @@ export function QueryInput({ onQueryResults }: QueryInputProps) {
         abortControllerRef.current.signal
       );
       onQueryResults(results);
-      toast.success(`Query executed successfully: ${results.length} records returned`);
+      //toast.success(`Query executed successfully: ${results.length} records returned`);
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error("Query error:", error);
