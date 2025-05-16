@@ -1,7 +1,9 @@
 import {
+  DefaultPageMenu,
   DefaultQuickActions,
   DefaultQuickActionsContent,
   TLComponents,
+  TLUiAssetUrlOverrides,
   Tldraw,
   TldrawUiMenuItem,
   loadSnapshot,
@@ -27,7 +29,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Save } from "lucide-react";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -81,44 +82,7 @@ export function DrawingEditor() {
       });
   };
 
-  const SaveButton = () => (
-    <DefaultQuickActions>
-      <DefaultQuickActionsContent />
-      <div>
-        <TldrawUiMenuItem
-          id="save"
-          icon="bring-to-front"
-          onSelect={() => setIsDialogOpen(true)}
-          label="Save new drawing"
-        />
-      </div>
-    </DefaultQuickActions>
-  );
-
-  function SelectDrawing() {
-    const handleSelectChange = async (id: string) => {
-      const drawing = drawings.find((d) => String(d.id) === id);
-      if (!drawing) return;
-
-      try {
-        const snapshot = drawing.drawings;
-        const editor = editorRef.current;
-
-        if (editor && snapshot) {
-          loadSnapshot(editor.store, snapshot);
-          requestAnimationFrame(() => {
-            editor.setCamera({ x: 0, y: 0, z: 1 });
-            editor.zoomToFit();
-          });
-          toast.success("Drawing loaded");
-        }
-
-        setSelected(drawing);
-      } catch (err) {
-        console.error("Errore nel caricamento:", err);
-        toast.error("Error loading drawing");
-      }
-    };
+  function customActions() {
 
     const handleUpdateDrawing = async () => {
       const editor = editorRef.current;
@@ -148,31 +112,111 @@ export function DrawingEditor() {
     };
 
     return (
+      <DefaultQuickActions>
+        <DefaultQuickActionsContent />
+        <div className="flex">
+          <TldrawUiMenuItem
+            onSelect={() => handleUpdateDrawing()}
+            disabled={!selected}
+            id="update"
+            icon="send-to-back"
+            label="Update drawing"
+          />
+
+          <TldrawUiMenuItem
+            id="save"
+            icon="bring-to-front"
+            onSelect={() => setIsDialogOpen(true)}
+            label="Save new drawing"
+          />
+        </div>
+      </DefaultQuickActions>
+    );
+  }
+
+  function CustomPageMenu() {
+    return (
       <div
-        className="absolute bottom-3 right-2 z-[1000] flex flex-row items-center bg-none rounded-md"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+        }}
+      >
+        <SelectDrawing />
+
+        <DefaultPageMenu />
+      </div>
+    );
+  }
+
+  function SelectDrawing() {
+    const handleSelectChange = async (id: string) => {
+      const drawing = drawings.find((d) => String(d.id) === id);
+      if (!drawing) return;
+
+      try {
+        const snapshot = drawing.drawings;
+        const editor = editorRef.current;
+
+        if (editor && snapshot) {
+          loadSnapshot(editor.store, snapshot);
+          requestAnimationFrame(() => {
+            editor.setCamera({ x: 0, y: 0, z: 1 });
+            editor.zoomToFit();
+          });
+          toast.success("Drawing loaded");
+        }
+
+        setSelected(drawing);
+      } catch (err) {
+        console.error("Errore nel caricamento:", err);
+        toast.error("Error loading drawing");
+      }
+    };
+
+    return (
+      <div
+        //className="absolute bottom-3 right-2 z-[1000] flex flex-row items-center bg-none rounded-md"
         style={{ pointerEvents: "auto" }}
       >
-        {selected && (
-          <Button
-            onClick={handleUpdateDrawing}
-            disabled={!selected}
-            className="mr-2 shadow-lg bg-white hover:bg-gray-100 text-gray-900"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save edit
-          </Button>
-        )}
 
         <Select
           onValueChange={handleSelectChange}
           value={selected ? String(selected.id) : undefined}
         >
-          <SelectTrigger className="w-[180px] border-none shadow-lg bg-background focus:ring-0 focus:outline-none rounded-md">
-            <SelectValue placeholder="Edit Drawing" />
+          <SelectTrigger
+            aria-label="Select Drawing"
+            className="
+          flex items-center justify-between
+          h-8
+          px-2
+          ml-2
+          rounded-md
+          bg-transparent
+          text-sm font-sm
+          text-gray-700
+          hover:bg-gray-200
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+          border border-transparent
+          cursor-pointer
+          min-w-[180px]
+        "
+          >
+            <SelectValue placeholder="New Drawing" />
           </SelectTrigger>
-          <SelectContent side="top">
+
+          <SelectContent
+            side="bottom"
+            align="start"
+            className="max-h-48 w-100 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
+          >
             {sortedDrawings.map((drawing) => (
-              <SelectItem key={drawing.id} value={String(drawing.id)}>
+              <SelectItem
+                key={drawing.id}
+                value={String(drawing.id)}
+                className="text-sm"
+              >
                 {drawing.filename}
               </SelectItem>
             ))}
@@ -183,8 +227,9 @@ export function DrawingEditor() {
   }
 
   const components: TLComponents = {
-    QuickActions: SaveButton,
-    NavigationPanel: SelectDrawing,
+    QuickActions: customActions,
+    //NavigationPanel: SelectDrawing,
+    PageMenu: CustomPageMenu,
   };
 
   const sortedDrawings = [...drawings].sort((a, b) => {
