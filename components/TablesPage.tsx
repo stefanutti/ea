@@ -125,7 +125,7 @@ export function TablesPage() {
       );
 
       setApplications(
-        results.map((record) => ({
+        results.map((record : any) => ({
           id: record.a.elementId,
           type: "application",
           hasRelationship: record.hasRelations,
@@ -148,7 +148,7 @@ export function TablesPage() {
       );
 
       setFlows(
-        results.map((record) => ({
+        results.map((record : any) => ({
           id: record.r.elementId,
           type: "flow",
           ...record.r.properties,
@@ -571,7 +571,7 @@ export function TablesPage() {
                       <TableHead className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm">
                         Select
                       </TableHead>
-                      {columns.map((column) => (
+                      {columns.map((column : any) => (
                         <TableHead
                           key={column}
                           className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm"
@@ -600,7 +600,7 @@ export function TablesPage() {
                             onChange={() => setSelectedRowId(item.id)}
                           />
                         </TableCell>
-                        {columns.map((column) => (
+                        {columns.map((column : any) => (
                           <TableCell
                             key={`${item.id}-${column}`}
                             className="whitespace-nowrap"

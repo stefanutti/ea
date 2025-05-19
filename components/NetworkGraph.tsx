@@ -81,7 +81,7 @@ const options = {
 function transformData(data: any) {
   const result: any = {};
 
-  data.forEach((row) => {
+  data.forEach((row : any) => {
     for (const key in row) {
       const item = row[key];
       const {
@@ -217,7 +217,7 @@ export function NetworkGraph() {
 
   const handleQueryResults = useCallback((results: any[]) => {
     const nodes = new Map();
-    const edges = [];
+    const edges : any = [];
 
     //console.log("RESULTS ",results)
     setDataTransformed(transformData(results));
@@ -640,8 +640,8 @@ export function NetworkGraph() {
         new AbortController().signal
       );
 
-      const newNodes = [];
-      const newEdges = [];
+      const newNodes : any = [];
+      const newEdges : any = [];
 
       const radius = 200;
       const angleStep = (2 * Math.PI) / results.length;
@@ -653,7 +653,7 @@ export function NetworkGraph() {
         ...newData,
       }));
 
-      results.forEach((record, index) => {
+      results.forEach((record : any, index : any) => {
         const nodeA = record.a;
         const nodeB = record.b;
         const relationship = record.e;

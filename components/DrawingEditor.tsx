@@ -64,6 +64,131 @@ export function DrawingEditor() {
     return <></>;
   });
 
+  /* Init Integrazione Neo4j <-> Tldraw
+  type Application = {
+  id: string
+  name: string
+  x: number
+  y: number
+}
+
+type Flow = {
+  id: string
+  source: string
+  target: string
+  label: string
+}
+
+const loadFromNeo4j = async () => {
+  try {
+    //Test query
+    const results: any[] = await executeQuery(
+      "MATCH (a:Application)-[f:flow]->(b:Application) RETURN a, f, b",
+      {},
+      new AbortController().signal
+    );
+
+    console.log("Neo4j data:", results);
+
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const applicationsMap = new Map<string, { id: string; name: string; x: number; y: number }>();
+    const flows: { id: string; source: string; target: string; label: string }[] = [];
+
+    const spacingX = 300;
+    const spacingY = 200;
+    let currentX = 100;
+    let currentY = 100;
+
+    results.forEach((record, index) => {
+      const a = record.a;
+      const b = record.b;
+      const f = record.f;
+
+      const appAId = a.properties.application_id;
+      const appBId = b.properties.application_id;
+
+      if (!applicationsMap.has(appAId)) {
+        applicationsMap.set(appAId, {
+          id: appAId,
+          name: a.properties.name,
+          x: currentX,
+          y: currentY,
+        });
+        currentY += spacingY;
+      }
+
+      if (!applicationsMap.has(appBId)) {
+        applicationsMap.set(appBId, {
+          id: appBId,
+          name: b.properties.name,
+          x: currentX + spacingX,
+          y: currentY,
+        });
+        currentY += spacingY;
+      }
+
+      flows.push({
+        id: f.properties.flow_id,
+        source: appAId,
+        target: appBId,
+        label: f.properties.name || "flow",
+      });
+    });
+
+    const applications = Array.from(applicationsMap.values());
+
+    const appShapes = applications.map((app) => ({
+      id: `shape:${app.id}`,
+      type: "geo",
+      x: app.x,
+      y: app.y,
+      props: {
+        geo: "rectangle",
+        text: app.name,
+        color: "blue",
+        dash: "draw",
+        fill: "solid",
+        w: 200,
+        h: 80,
+      },
+    }));
+
+    editor.createShapes(appShapes);
+
+    const flowShapes = flows.map((flow) => {
+      const sourceApp = applicationsMap.get(flow.source);
+      const targetApp = applicationsMap.get(flow.target);
+
+      if (!sourceApp || !targetApp) return null;
+
+      return {
+        id: `shape:${flow.id}`,
+        type: "arrow",
+        x: sourceApp.x + 50,
+        y: sourceApp.y + 25,
+        props: {
+          start: { x: 0, y: 0 },
+          end: {
+            x: targetApp.x - sourceApp.x,
+            y: targetApp.y - sourceApp.y,
+          },
+          arrowheadEnd: "arrow",
+        },
+      };
+    }).filter(Boolean); // rimuove eventuali null
+
+    editor.createShapes(flowShapes as any[]);
+
+    // toast.success("Applications data loaded successfully");
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    toast.error("Failed to load applications");
+  }
+};*/
+
+
   const fetchDrawings = async () => {
     const { data, error } = await supabase.from("ea-drawings").select("*");
     if (error) {
@@ -335,9 +460,21 @@ export function DrawingEditor() {
             title="New Flow"
           >
             <div className="tlui-button__icon">
-                <Link className="h-4 w-4" />
+              <Link className="h-4 w-4" />
             </div>
           </button>
+
+          {/* Bottone di test DA RIMUOVERE
+          <button
+            type="button"
+            onClick={loadFromNeo4j}
+            className="tlui-menu__item tlui-button tlui-button__default"
+            title="Load from Neo4j"
+          >
+            <div className="tlui-button__icon">
+              <img src="/svg/upload_icon.svg" alt="Load" className="w-4 h-4" />
+            </div>
+          </button>*/}
         </div>
       </DefaultQuickActions>
     );
@@ -527,21 +664,21 @@ export function DrawingEditor() {
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4 w-full">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsApplicationDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  form="application-form"
-                  disabled={isLoading}
-                >
-                  Save application
-                </Button>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsApplicationDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="application-form"
+                disabled={isLoading}
+              >
+                Save application
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -563,17 +700,17 @@ export function DrawingEditor() {
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4 w-full">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsFlowDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" form="flow-form" disabled={isLoading}>
-                  Save flow
-                </Button>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsFlowDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" form="flow-form" disabled={isLoading}>
+                Save flow
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
