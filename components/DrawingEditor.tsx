@@ -34,6 +34,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { executeQuery } from "@/lib/neo4j";
+import { FlowForm } from "./FlowForm";
+import { ApplicationForm } from "./ApplicationForm";
+import { AppWindow, Link } from "lucide-react";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -41,22 +45,23 @@ export function DrawingEditor() {
   const [drawings, setDrawings] = useState<any[]>([]);
   const [showFlowContext, setShowFlowContext] = useState(false);
   const editorRef = useRef<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+  const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchDrawings();
   }, []);
 
-   const ShapeListener = track(function MetaUiHelper() {
+  const ShapeListener = track(function MetaUiHelper() {
     const editor = useEditor();
     const type = editor.getOnlySelectedShape()?.type;
-    if(type == "arrow"){
+    if (type == "arrow") {
       setShowFlowContext(true);
-    }else{
+    } else {
       setShowFlowContext(false);
     }
-    return (
-      <></>
-    );
+    return <></>;
   });
 
   const fetchDrawings = async () => {
@@ -99,6 +104,156 @@ export function DrawingEditor() {
       .catch(() => {
         toast.error("Error in saving the drawing");
       });
+  };
+
+  const handleApplicationSubmit = async (data: any) => {
+    try {
+      const transformedData = {
+        ...data,
+        /*internal_application_specialists: data.internal_application_specialists ? JSON.stringify(data.internal_application_specialists.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          business_partner_business_contacts: data.business_partner_business_contacts ? JSON.stringify(data.business_partner_business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          business_contacts: data.business_contacts ? JSON.stringify(data.business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          internal_developers: data.internal_developers ? JSON.stringify(data.internal_developers.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          ams_contacts_email: data.ams_contacts_email ? JSON.stringify(data.ams_contacts_email.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          ams_contact_phone: data.ams_contact_phone ? JSON.stringify(data.ams_contact_phone.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          smes_factory: data.smes_factory ? JSON.stringify(data.smes_factory.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+          notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",*/
+        ams_contact_phone: data.ams_contact_phone || "",
+        ams_expire_date: data.ams_expire_date || null,
+        ams_supplier: data.ams_supplier || "",
+        ams_portal: data.ams_portal || "",
+        links_to_documentation: data.links_to_documentation || "",
+        ams_type: data.ams_type || "",
+        decommission_date: data.decommission_date || null,
+      };
+
+      await handleSaveApplication(transformedData);
+    } catch (error) {
+      console.error("Error transforming data:", error);
+      toast.error("Invalid format in one or more fields");
+    }
+  };
+
+  const handleFlowSubmit = async (data: any) => {
+    try {
+      const transformedData = {
+        ...data,
+        //notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
+        release_date: data.release_date || null,
+      };
+
+      //console.log("Data -> ", transformedData)
+      await handleSaveFlow(transformedData);
+    } catch (error) {
+      console.error("Error transforming data:", error);
+      toast.error("Invalid format in one or more fields");
+    }
+  };
+
+  const handleSaveApplication = async (data: any) => {
+    if (!data) return;
+
+    setIsLoading(true);
+    try {
+      const createNodeQuery = `
+          CREATE (a:Application {
+            application_id: $application_id,
+            name: $name,
+            description: $description,
+            ownerships: $ownerships,
+            application_type: $application_type,
+            complexity: $complexity,
+            criticality: $criticality,
+            processes: $processes,
+            active: $active,
+            internal_application_specialists: $internal_application_specialists,
+            business_partner_business_contacts: $business_partner_business_contacts,
+            business_contacts: $business_contacts,
+            internal_developers: $internal_developers,
+            hosting: $hosting,
+            ams: $ams,
+            bi: $bi,
+            disaster_recovery: $disaster_recovery,
+            user_license_type: $user_license_type,
+            access_type: $access_type,
+            sw_supplier: $sw_supplier,
+            ams_expire_date: $ams_expire_date,
+            ams_contacts_email: $ams_contacts_email,
+            ams_contact_phone: $ams_contact_phone,
+            ams_supplier: $ams_supplier,
+            smes_factory: $smes_factory,
+            ams_portal: $ams_portal,
+            organization_family: $organization_family,
+            links_to_documentation: $links_to_documentation,
+            scope: $scope,
+            ams_service: $ams_service,
+            ams_type: $ams_type,
+            decommission_date: $decommission_date,
+            to_be_decommissioned: $to_be_decommissioned,
+            notes: $notes,
+            links_to_sharepoint_documentation: $links_to_sharepoint_documentation
+          })
+          RETURN a
+        `;
+
+      const result = await executeQuery(createNodeQuery, data);
+
+      if (result && result.length > 0) {
+        toast.success("Application added successfully");
+        setIsApplicationDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error saving application:", error);
+      toast.error("Failed to save application: " + (error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveFlow = async (data: any) => {
+    if (!data) return;
+
+    setIsLoading(true);
+    try {
+      const createFlowQuery = `
+          MATCH (initiator:Application {application_id: $initiator_application})
+          MATCH (target:Application {application_id: $target_application})
+  
+          CREATE (initiator)-[f:flow {
+            flow_id: $flow_id,
+            name: $name,
+            description: $description,
+            initiator_application: $initiator_application,
+            target_application: $target_application,
+            communication_mode: $communication_mode,
+            intent: $intent,
+            message_format: $message_format,
+            data_flow: $data_flow,
+            protocol: $protocol,
+            frequency: $frequency,
+            estimated_calls_per_day: $estimated_calls_per_day,
+            average_execution_time_in_sec: $average_execution_time_in_sec,
+            average_message_size_in_kb: $average_message_size_in_kb,
+            api_gateway: $api_gateway,
+            release_date: $release_date,
+            notes: $notes,
+            labels: $labels
+          }]->(target)
+          RETURN f
+        `;
+
+      const result = await executeQuery(createFlowQuery, data);
+
+      if (result && result.length > 0) {
+        toast.success("Flow added successfully");
+        setIsFlowDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error saving application:", error);
+      toast.error("Failed to save application: " + (error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   function customActions() {
@@ -159,6 +314,28 @@ export function DrawingEditor() {
           >
             <div className="tlui-button__icon">
               <img src="/svg/save_icon.svg" alt="Save" className="w-4 h-4" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsApplicationDialogOpen(true)}
+            className="tlui-menu__item tlui-button tlui-button__default"
+            title="New Application"
+          >
+            <div className="tlui-button__icon">
+              <AppWindow className="h-4 w-4" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsFlowDialogOpen(true)}
+            className="tlui-menu__item tlui-button tlui-button__default"
+            title="New Flow"
+          >
+            <div className="tlui-button__icon">
+                <Link className="h-4 w-4" />
             </div>
           </button>
         </div>
@@ -258,25 +435,23 @@ export function DrawingEditor() {
   }
 
   function CustomContextMenu(props: TLUiContextMenuProps) {
-
     return (
       <DefaultContextMenu {...props}>
-
         <TldrawUiMenuGroup id="flowContext">
           <div>
-            { showFlowContext &&
-            <TldrawUiMenuItem
-              id="flow"
-              label="Flusso EA"
-              readonlyOk
-              onSelect={() => {
-                alert(showFlowContext);
-              } } />
-            }
+            {showFlowContext && (
+              <TldrawUiMenuItem
+                id="flow"
+                label="Flusso EA"
+                readonlyOk
+                onSelect={() => {
+                  alert(showFlowContext);
+                }}
+              />
+            )}
           </div>
         </TldrawUiMenuGroup>
         <DefaultContextMenuContent />
-
       </DefaultContextMenu>
     );
   }
@@ -327,6 +502,78 @@ export function DrawingEditor() {
             <Button type="submit" form="save-drawing-form">
               Save drawing
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isApplicationDialogOpen}
+        onOpenChange={setIsApplicationDialogOpen}
+      >
+        <DialogContent
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
+          aria-describedby="dialog-description"
+        >
+          <DialogHeader>
+            <DialogTitle>Add new application</DialogTitle>
+          </DialogHeader>
+          <p id="dialog-description" className="sr-only">
+            Use this form to create a new application and add it to the network
+            graph.
+          </p>
+          <ScrollArea className="flex-1 px-4">
+            <div className="py-4">
+              <ApplicationForm onSubmit={handleApplicationSubmit} data={{}} />
+            </div>
+          </ScrollArea>
+          <DialogFooter className="mt-4 w-full">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsApplicationDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="application-form"
+                  disabled={isLoading}
+                >
+                  Save application
+                </Button>
+              </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
+        <DialogContent
+          className="sm:max-w-[800px] h-[90vh] flex flex-col z-[400]"
+          aria-describedby="dialog-description"
+        >
+          <DialogHeader>
+            <DialogTitle>Add new flow</DialogTitle>
+          </DialogHeader>
+          <p id="dialog-description" className="sr-only">
+            Use this form to create a new flow.
+          </p>
+          <ScrollArea className="flex-1 px-4">
+            <div className="py-4">
+              <FlowForm onSubmit={handleFlowSubmit} data={{}} />
+            </div>
+          </ScrollArea>
+          <DialogFooter className="mt-4 w-full">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFlowDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" form="flow-form" disabled={isLoading}>
+                  Save flow
+                </Button>
+              </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
