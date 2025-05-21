@@ -88,7 +88,7 @@ export function DrawingCollapsible({ title, items, isOpen, onToggle }: DrawingCo
   };
 
   return (
-    <div className="border rounded-md shadow-sm bg-white max-w-md mx-auto w-[350px] p-[2px]">
+    <div className="border rounded-md shadow-sm bg-white max-w-md mx-auto w-[250px] p-[2px]">
       <Collapsible open={isOpen} onOpenChange={onToggle}>
         <CollapsibleTrigger className="flex justify-between items-center cursor-pointer select-none px-4 py-1 rounded font-semibold text-base min-h-[36px] w-full">
           <span className="text-sm font-medium">{title}</span>
@@ -99,7 +99,9 @@ export function DrawingCollapsible({ title, items, isOpen, onToggle }: DrawingCo
           />
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden transition-all duration-300">
+        <CollapsibleContent className={`overflow-hidden transition-all duration-300 ${
+              isOpen ? "animate-collapsible-down" : "animate-collapsible-up"
+            }`}>
           <div className="pt-2 px-2 pb-2">
             <div className="pt-2 px-2">
               <div className="mb-3">

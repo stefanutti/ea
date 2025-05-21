@@ -52,9 +52,83 @@ export function DrawingEditor() {
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
   const [flowFormData, setFlowFormData] = useState<any>({});
   const [applications, setApplications] = useState<any[]>([]);
-  const [selectedAppId, setSelectedAppId] = useState<string | undefined>();
   const [dragDropApplications, setDragDropApplications] = useState<any[]>([]);
   const [isCollapseOpen, setIsCollapseOpen] = useState(false);
+  const [isSVGCollapseOpen, setIsSVGCollapseOpen] = useState(false);
+  const previousShapesRef = useRef<Record<string, any>>({});
+
+
+
+/* ------------------------TEST SVG------------------------------------------- */
+
+interface SvgItem {
+  id: string;
+  name: string;
+  url: string;  // URL all'immagine SVG
+}
+
+
+   const [iconNames, setIconNames] = useState<string[]>([])
+  const [icons, setIcons] = useState<string[]>([])
+
+   useEffect(() => {
+    const fetchIconNames = async () => {
+  const res = await fetch('https://api.iconify.design/mdi:home.svg')
+  const data = await res.json()
+
+  console.log("data, ", data)
+
+  if (data?.icons) {
+    const names = Object.keys(data.icons).slice(0, 20)
+    setIconNames(names)
+  } else {
+    console.error("La risposta non contiene 'icons'", data)
+  }
+}
+
+    fetchIconNames()
+  }, [])
+
+  useEffect(() => {
+    const fetchIcons = async () => {
+      const fetched = await Promise.all(
+        iconNames.map(async (name) => {
+          const res = await fetch(`https://api.iconify.design/mdi:${name}.svg`)
+          return await res.text()
+        })
+      )
+      console.log("fetched ", fetched)
+      setIcons(fetched)
+    }
+
+    if (iconNames.length > 0) {
+      fetchIcons()
+    }
+  }, [iconNames])
+
+
+
+
+
+
+
+
+
+/* ----------------------------FINE TEST SVG----------------------------- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   useEffect(() => {
     fetchApplications();
@@ -91,8 +165,6 @@ export function DrawingEditor() {
       setDrawings(data);
     }
   };
-
-  const previousShapesRef = useRef<Record<string, any>>({});
 
   function handleRemoveShape(id: string | number) {
     setDragDropApplications((prev) =>
@@ -407,10 +479,6 @@ export function DrawingEditor() {
     }
   };
 
-  const handleApplicationSelect = (app: any) => {
-    setSelectedAppId(app);
-  };
-
   function customActions() {
     const handleUpdateDrawing = async () => {
       const editor = editorRef.current;
@@ -509,6 +577,7 @@ export function DrawingEditor() {
       >
         <SelectDrawing />
         <DefaultPageMenu />
+       
       </div>
     );
   }
@@ -579,16 +648,22 @@ export function DrawingEditor() {
       </DefaultContextMenu>
     );
   }
-
   //Gestione drag and drop
-  function CustomNavigationPanel(props: TLUiStylePanelProps) {
+  function Collapsibles(props: TLUiStylePanelProps) {
     return (
-      <div className="p-2" style={{ pointerEvents: "auto" }}>
+      <div className="p-2 absolute flex flex-col gap-[8px]" style={{ pointerEvents: "auto", top: "50px" }}>
         <DrawingCollapsible
           title="Applications"
           items={dragDropApplications}
           isOpen={isCollapseOpen}
-          onToggle={() => setIsCollapseOpen((open) => !open)}
+          onToggle={(open: boolean) => setIsCollapseOpen(open)}
+        />
+
+        <DrawingCollapsible
+          title="SVG"
+          items={[]}
+          isOpen={isSVGCollapseOpen}
+          onToggle={(open: boolean) => setIsSVGCollapseOpen(open)}
         />
       </div>
     );
@@ -651,7 +726,7 @@ export function DrawingEditor() {
     QuickActions: customActions,
     PageMenu: CustomPageMenu,
     ContextMenu: CustomContextMenu,
-    NavigationPanel: CustomNavigationPanel,
+    InFrontOfTheCanvas: Collapsibles
   };
 
   const sortedDrawings = [...drawings].sort((a, b) => {
