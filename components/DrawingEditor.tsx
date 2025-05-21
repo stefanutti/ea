@@ -6,6 +6,7 @@ import {
   DefaultQuickActionsContent,
   TLComponents,
   TLUiContextMenuProps,
+  TLUiStylePanelProps,
   Tldraw,
   TldrawUiMenuGroup,
   TldrawUiMenuItem,
@@ -29,6 +30,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { SaveDrawingForm } from "./SaveDrawingForm";
+import { DrawingCollapsible } from "./Collapsible";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -37,7 +39,7 @@ import { supabase } from "@/lib/supabase";
 import { executeQuery } from "@/lib/neo4j";
 import { FlowForm } from "./FlowForm";
 import { ApplicationForm } from "./ApplicationForm";
-import { AppWindow, Link } from "lucide-react";
+import { AppWindow, Link, Lock } from "lucide-react";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -48,146 +50,38 @@ export function DrawingEditor() {
   const [isLoading, setIsLoading] = useState(false);
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
   const [isFlowDialogOpen, setIsFlowDialogOpen] = useState(false);
+  const [flowFormData, setFlowFormData] = useState<any>({});
+  const [applications, setApplications] = useState<any[]>([]);
+  const [selectedAppId, setSelectedAppId] = useState<string | undefined>();
+  const [dragDropApplications, setDragDropApplications] = useState<any[]>([]);
+  const [isCollapseOpen, setIsCollapseOpen] = useState(false);
 
   useEffect(() => {
+    fetchApplications();
     fetchDrawings();
   }, []);
 
-  const ShapeListener = track(function MetaUiHelper() {
-    const editor = useEditor();
-    const type = editor.getOnlySelectedShape()?.type;
-    if (type == "arrow") {
-      setShowFlowContext(true);
-    } else {
-      setShowFlowContext(false);
+  const fetchApplications = async () => {
+    try {
+      const result: any[] = await executeQuery(
+        "MATCH (a:Application) RETURN a ORDER BY a.name ASC",
+        {},
+        new AbortController().signal
+      );
+      const apps = result.map((r) => r.a);
+      setApplications(apps);
+
+      const transformedData = apps.map((item: any) => ({
+        id: item.properties.application_id,
+        name: item.properties.name,
+        selected: false,
+      }));
+      setDragDropApplications(transformedData);
+    } catch (err) {
+      console.error("Errore nel recupero delle applicazioni:", err);
+      toast.error("Errore nel caricamento delle applicazioni");
     }
-    return <></>;
-  });
-
-  /* Init Integrazione Neo4j <-> Tldraw
-  type Application = {
-  id: string
-  name: string
-  x: number
-  y: number
-}
-
-type Flow = {
-  id: string
-  source: string
-  target: string
-  label: string
-}
-
-const loadFromNeo4j = async () => {
-  try {
-    //Test query
-    const results: any[] = await executeQuery(
-      "MATCH (a:Application)-[f:flow]->(b:Application) RETURN a, f, b",
-      {},
-      new AbortController().signal
-    );
-
-    console.log("Neo4j data:", results);
-
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const applicationsMap = new Map<string, { id: string; name: string; x: number; y: number }>();
-    const flows: { id: string; source: string; target: string; label: string }[] = [];
-
-    const spacingX = 300;
-    const spacingY = 200;
-    let currentX = 100;
-    let currentY = 100;
-
-    results.forEach((record, index) => {
-      const a = record.a;
-      const b = record.b;
-      const f = record.f;
-
-      const appAId = a.properties.application_id;
-      const appBId = b.properties.application_id;
-
-      if (!applicationsMap.has(appAId)) {
-        applicationsMap.set(appAId, {
-          id: appAId,
-          name: a.properties.name,
-          x: currentX,
-          y: currentY,
-        });
-        currentY += spacingY;
-      }
-
-      if (!applicationsMap.has(appBId)) {
-        applicationsMap.set(appBId, {
-          id: appBId,
-          name: b.properties.name,
-          x: currentX + spacingX,
-          y: currentY,
-        });
-        currentY += spacingY;
-      }
-
-      flows.push({
-        id: f.properties.flow_id,
-        source: appAId,
-        target: appBId,
-        label: f.properties.name || "flow",
-      });
-    });
-
-    const applications = Array.from(applicationsMap.values());
-
-    const appShapes = applications.map((app) => ({
-      id: `shape:${app.id}`,
-      type: "geo",
-      x: app.x,
-      y: app.y,
-      props: {
-        geo: "rectangle",
-        text: app.name,
-        color: "blue",
-        dash: "draw",
-        fill: "solid",
-        w: 200,
-        h: 80,
-      },
-    }));
-
-    editor.createShapes(appShapes);
-
-    const flowShapes = flows.map((flow) => {
-      const sourceApp = applicationsMap.get(flow.source);
-      const targetApp = applicationsMap.get(flow.target);
-
-      if (!sourceApp || !targetApp) return null;
-
-      return {
-        id: `shape:${flow.id}`,
-        type: "arrow",
-        x: sourceApp.x + 50,
-        y: sourceApp.y + 25,
-        props: {
-          start: { x: 0, y: 0 },
-          end: {
-            x: targetApp.x - sourceApp.x,
-            y: targetApp.y - sourceApp.y,
-          },
-          arrowheadEnd: "arrow",
-        },
-      };
-    }).filter(Boolean); // rimuove eventuali null
-
-    editor.createShapes(flowShapes as any[]);
-
-    // toast.success("Applications data loaded successfully");
-  } catch (error) {
-    console.error("Error fetching applications:", error);
-    toast.error("Failed to load applications");
-  }
-};*/
-
+  };
 
   const fetchDrawings = async () => {
     const { data, error } = await supabase.from("ea-drawings").select("*");
@@ -197,6 +91,146 @@ const loadFromNeo4j = async () => {
       setDrawings(data);
     }
   };
+
+  const previousShapesRef = useRef<Record<string, any>>({});
+
+  function handleRemoveShape(id: string | number) {
+    setDragDropApplications((prev) =>
+      prev.map((app) => (app.id === id ? { ...app, selected: false } : app))
+    );
+  }
+
+  const ShapeRemoval = () => {
+    const editor = useEditor();
+
+    useEffect(() => {
+      if (!editor) return;
+
+      // Salva snapshot iniziale delle shape
+      previousShapesRef.current = Object.fromEntries(
+        editor.getCurrentPageShapes().map((s: any) => [s.id, s])
+      );
+
+      function onChange() {
+        const currentShapes = Object.fromEntries(
+          editor.getCurrentPageShapes().map((s: any) => [s.id, s])
+        );
+
+        // Trova shape che erano presenti prima ma ora non più
+        const removedShapeIds = Object.keys(previousShapesRef.current).filter(
+          (id) => !(id in currentShapes)
+        );
+
+        if (removedShapeIds.length > 0) {
+          removedShapeIds.forEach((removedId) => {
+            const cleanId = removedId.replace(/^shape:/, ""); // rimuove "shape:" solo se è all'inizio
+            console.log("Shape deleted:", cleanId);
+            handleRemoveShape(cleanId);
+          });
+        }
+
+        // Aggiorna snapshot
+        previousShapesRef.current = currentShapes;
+      }
+
+      editor.on("change", onChange);
+
+      return () => {
+        editor.off("change", onChange);
+      };
+    }, [editor]);
+
+    return null;
+  };
+
+  const ShapeListener = track(function MetaUiHelper() {
+    const editor = useEditor();
+    const selectedShape = editor.getOnlySelectedShape();
+    const type = selectedShape?.type;
+    const shapeMeta = selectedShape?.meta;
+
+    if (type == "arrow") {
+      setShowFlowContext(true);
+    } else {
+      setShowFlowContext(false);
+    }
+    return <></>;
+  });
+
+  function SelectDrawing() {
+    const handleSelectChange = async (id: string) => {
+      const drawing = drawings.find((d) => String(d.id) === id);
+      if (!drawing) return;
+
+      try {
+        const snapshot = drawing.drawings;
+        const editor = editorRef.current;
+
+        if (editor && snapshot) {
+          loadSnapshot(editor.store, snapshot);
+          requestAnimationFrame(() => {
+            editor.setCamera({ x: 0, y: 0, z: 1 });
+            editor.zoomToFit();
+          });
+          toast.success("Drawing loaded");
+        }
+
+        setSelected(drawing);
+      } catch (err) {
+        console.error("Errore nel caricamento:", err);
+        toast.error("Error loading drawing");
+      }
+    };
+
+    return (
+      <div
+        //className="absolute bottom-3 right-2 z-[1000] flex flex-row items-center bg-none rounded-md"
+        style={{ pointerEvents: "auto" }}
+      >
+        <Select
+          onValueChange={handleSelectChange}
+          value={selected ? String(selected.id) : undefined}
+        >
+          <SelectTrigger
+            aria-label="Select Drawing"
+            className="
+          flex items-center justify-between
+          h-8
+          px-2
+          ml-2
+          rounded-md
+          bg-transparent
+          text-sm font-sm
+          text-gray-700
+          hover:bg-gray-200
+          focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500
+          border border-transparent
+          cursor-pointer
+          min-w-[180px]
+        "
+          >
+            <SelectValue placeholder="New Drawing" />
+          </SelectTrigger>
+
+          <SelectContent
+            side="bottom"
+            align="start"
+            className="max-h-48 w-100 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
+          >
+            {sortedDrawings.map((drawing) => (
+              <SelectItem
+                key={drawing.id}
+                value={String(drawing.id)}
+                className="text-sm"
+              >
+                {drawing.filename}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   const saveDrawing = async (obj: any) => {
     const editor = editorRef.current;
@@ -235,14 +269,6 @@ const loadFromNeo4j = async () => {
     try {
       const transformedData = {
         ...data,
-        /*internal_application_specialists: data.internal_application_specialists ? JSON.stringify(data.internal_application_specialists.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          business_partner_business_contacts: data.business_partner_business_contacts ? JSON.stringify(data.business_partner_business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          business_contacts: data.business_contacts ? JSON.stringify(data.business_contacts.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          internal_developers: data.internal_developers ? JSON.stringify(data.internal_developers.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          ams_contacts_email: data.ams_contacts_email ? JSON.stringify(data.ams_contacts_email.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          ams_contact_phone: data.ams_contact_phone ? JSON.stringify(data.ams_contact_phone.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          smes_factory: data.smes_factory ? JSON.stringify(data.smes_factory.split(',').map(v => v.trim()).filter(Boolean)) : "[]",
-          notes: data.notes ? JSON.stringify(data.notes.split(',').map(v => v.trim()).filter(Boolean)) : "[]",*/
         ams_contact_phone: data.ams_contact_phone || "",
         ams_expire_date: data.ams_expire_date || null,
         ams_supplier: data.ams_supplier || "",
@@ -381,6 +407,10 @@ const loadFromNeo4j = async () => {
     }
   };
 
+  const handleApplicationSelect = (app: any) => {
+    setSelectedAppId(app);
+  };
+
   function customActions() {
     const handleUpdateDrawing = async () => {
       const editor = editorRef.current;
@@ -463,18 +493,6 @@ const loadFromNeo4j = async () => {
               <Link className="h-4 w-4" />
             </div>
           </button>
-
-          {/* Bottone di test DA RIMUOVERE
-          <button
-            type="button"
-            onClick={loadFromNeo4j}
-            className="tlui-menu__item tlui-button tlui-button__default"
-            title="Load from Neo4j"
-          >
-            <div className="tlui-button__icon">
-              <img src="/svg/upload_icon.svg" alt="Load" className="w-4 h-4" />
-            </div>
-          </button>*/}
         </div>
       </DefaultQuickActions>
     );
@@ -490,83 +508,7 @@ const loadFromNeo4j = async () => {
         }}
       >
         <SelectDrawing />
-
         <DefaultPageMenu />
-      </div>
-    );
-  }
-
-  function SelectDrawing() {
-    const handleSelectChange = async (id: string) => {
-      const drawing = drawings.find((d) => String(d.id) === id);
-      if (!drawing) return;
-
-      try {
-        const snapshot = drawing.drawings;
-        const editor = editorRef.current;
-
-        if (editor && snapshot) {
-          loadSnapshot(editor.store, snapshot);
-          requestAnimationFrame(() => {
-            editor.setCamera({ x: 0, y: 0, z: 1 });
-            editor.zoomToFit();
-          });
-          toast.success("Drawing loaded");
-        }
-
-        setSelected(drawing);
-      } catch (err) {
-        console.error("Errore nel caricamento:", err);
-        toast.error("Error loading drawing");
-      }
-    };
-
-    return (
-      <div
-        //className="absolute bottom-3 right-2 z-[1000] flex flex-row items-center bg-none rounded-md"
-        style={{ pointerEvents: "auto" }}
-      >
-        <Select
-          onValueChange={handleSelectChange}
-          value={selected ? String(selected.id) : undefined}
-        >
-          <SelectTrigger
-            aria-label="Select Drawing"
-            className="
-          flex items-center justify-between
-          h-8
-          px-2
-          ml-2
-          rounded-md
-          bg-transparent
-          text-sm font-sm
-          text-gray-700
-          hover:bg-gray-200
-          focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500
-          border border-transparent
-          cursor-pointer
-          min-w-[180px]
-        "
-          >
-            <SelectValue placeholder="New Drawing" />
-          </SelectTrigger>
-
-          <SelectContent
-            side="bottom"
-            align="start"
-            className="max-h-48 w-100 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg"
-          >
-            {sortedDrawings.map((drawing) => (
-              <SelectItem
-                key={drawing.id}
-                value={String(drawing.id)}
-                className="text-sm"
-              >
-                {drawing.filename}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
     );
   }
@@ -582,7 +524,52 @@ const loadFromNeo4j = async () => {
                 label="Flusso EA"
                 readonlyOk
                 onSelect={() => {
-                  alert(showFlowContext);
+                  const editor = editorRef.current;
+                  if (!editor) return;
+
+                  const shape = editor.getOnlySelectedShape();
+                  if (!shape || shape.type !== "arrow") return;
+
+                  const { x, y } = shape;
+                  const { start, end } = shape.props;
+
+                  // Recupera i due punti collegati
+                  const allShapes = editor.getCurrentPageShapes();
+                  const startX = x + start.x;
+                  const startY = y + start.y;
+                  const endX = x + end.x;
+                  const endY = y + end.y;
+
+                  const getClosestApplication = (xPos: number, yPos: number) =>
+                    allShapes.find((s: any) => {
+                      const isApp =
+                        s.type === "geo" && s.meta?.type === "application";
+                      if (!isApp) return false;
+                      const sx = s.x;
+                      const sy = s.y;
+                      const sw = s.props.w;
+                      const sh = s.props.h;
+                      return (
+                        xPos >= sx &&
+                        xPos <= sx + sw &&
+                        yPos >= sy &&
+                        yPos <= sy + sh
+                      );
+                    });
+
+                  const startApp = getClosestApplication(startX, startY);
+                  const endApp = getClosestApplication(endX, endY);
+
+                  if (!startApp || !endApp) {
+                    toast.error("Error loading app data");
+                    return;
+                  }
+
+                  setFlowFormData({
+                    initiator_application: startApp.meta.data.id,
+                    target_application: endApp.meta.data.id,
+                  });
+                  setIsFlowDialogOpen(true);
                 }}
               />
             )}
@@ -593,10 +580,78 @@ const loadFromNeo4j = async () => {
     );
   }
 
+  //Gestione drag and drop
+  function CustomNavigationPanel(props: TLUiStylePanelProps) {
+    return (
+      <div className="p-2" style={{ pointerEvents: "auto" }}>
+        <DrawingCollapsible
+          title="Applications"
+          items={dragDropApplications}
+          isOpen={isCollapseOpen}
+          onToggle={() => setIsCollapseOpen((open) => !open)}
+        />
+      </div>
+    );
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const data = e.dataTransfer.getData("application/json");
+    if (!data) return;
+
+    const item = JSON.parse(data);
+    if (!item || !editorRef.current) return;
+
+    const editor = editorRef.current;
+
+    const bounds = (e.target as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    const y = e.clientY - bounds.top;
+
+    const point = editor.screenToPage({ x, y });
+
+    const existingShape = editor
+      .getCurrentPageShapes()
+      .find((shape: any) => shape.meta?.data?.id === item.id);
+    if (existingShape) {
+      console.log("Applicazione già presente sul canvas");
+      return;
+    } else {
+      setDragDropApplications((prev) =>
+        prev.map((app) =>
+          app.id === item.id ? { ...app, selected: !app.selected } : app
+        )
+      );
+    }
+
+    editor.createShape({
+      id: `shape:${item.id}`,
+      type: "geo",
+      x: point.x,
+      y: point.y,
+      props: {
+        geo: "rectangle",
+        w: 250,
+        h: 100,
+        dash: "draw",
+        fill: "solid",
+        font: "sans",
+        color: "blue",
+        size: "m",
+        text: item?.name,
+      },
+      meta: {
+        type: "application",
+        data: item,
+      },
+    });
+  }
+
   const components: TLComponents = {
     QuickActions: customActions,
     PageMenu: CustomPageMenu,
     ContextMenu: CustomContextMenu,
+    NavigationPanel: CustomNavigationPanel,
   };
 
   const sortedDrawings = [...drawings].sort((a, b) => {
@@ -605,7 +660,11 @@ const loadFromNeo4j = async () => {
 
   return (
     <>
-      <div className="w-full h-full border rounded-lg bg-card overflow-hidden">
+      <div
+        className="w-full h-full border rounded-lg bg-card overflow-hidden"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
         <Tldraw
           components={components}
           onMount={(editor) => {
@@ -613,6 +672,7 @@ const loadFromNeo4j = async () => {
           }}
         >
           <ShapeListener />
+          <ShapeRemoval />
         </Tldraw>
       </div>
 
@@ -696,7 +756,7 @@ const loadFromNeo4j = async () => {
           </p>
           <ScrollArea className="flex-1 px-4">
             <div className="py-4">
-              <FlowForm onSubmit={handleFlowSubmit} data={{}} />
+              <FlowForm onSubmit={handleFlowSubmit} data={flowFormData} />
             </div>
           </ScrollArea>
           <DialogFooter className="mt-4 w-full">
