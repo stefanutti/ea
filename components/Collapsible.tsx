@@ -9,7 +9,7 @@ import {
 import { ChevronDown, GripVertical } from "lucide-react";
 
 interface DrawingItem {
-  id: string | number;
+  id?: string | number;
   name: string;
   svg?: string | null;
   [key: string]: any;
