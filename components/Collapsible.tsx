@@ -20,8 +20,8 @@ interface DrawingCollapsibleProps {
   items: DrawingItem[];
   isOpen: boolean;
   onToggle: (open: boolean) => void;
-  type?: "text" | "images"; 
-  width?: string | number; 
+  type?: "text" | "images";
+  width?: string | number;
   height?: string | number;
 }
 
@@ -32,7 +32,7 @@ export function DrawingCollapsible({
   onToggle,
   type = "text",
   width = "250px",
-  height
+  height,
 }: DrawingCollapsibleProps) {
   const [search, setSearch] = useState("");
   const [list, setList] = useState(items);
@@ -50,7 +50,11 @@ export function DrawingCollapsible({
     item.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDragStart = (index: number, item: DrawingItem, event: React.DragEvent) => {
+  const handleDragStart = (
+    index: number,
+    item: DrawingItem,
+    event: React.DragEvent
+  ) => {
     dragItemIndex.current = index;
     setDraggingIndex(index);
     const transferData = {
@@ -58,7 +62,10 @@ export function DrawingCollapsible({
       name: item.name,
       svg: item.svg || null,
     };
-    event.dataTransfer.setData("application/json", JSON.stringify(transferData));
+    event.dataTransfer.setData(
+      "application/json",
+      JSON.stringify(transferData)
+    );
   };
 
   const handleDragEnter = (index: number) => {
@@ -96,10 +103,17 @@ export function DrawingCollapsible({
   };
 
   return (
-    <div className="border rounded-md shadow-sm bg-white p-[2px] mx-auto" style={{
+    <div
+      className="border rounded-md shadow-sm bg-white p-[2px] mx-auto"
+      style={{
         width: typeof width === "number" ? `${width}px` : width,
-        height: height ? (typeof height === "number" ? `${height}px` : height) : undefined,
-      }}>
+        height: height
+          ? typeof height === "number"
+            ? `${height}px`
+            : height
+          : undefined,
+      }}
+    >
       <Collapsible open={isOpen} onOpenChange={onToggle}>
         <CollapsibleTrigger className="flex justify-between items-center cursor-pointer select-none px-4 py-1 rounded font-semibold text-base min-h-[36px] w-full">
           <span className="text-sm font-medium">{title}</span>
@@ -127,7 +141,9 @@ export function DrawingCollapsible({
             </div>
 
             {filteredItems.length === 0 && (
-              <div className="text-gray-500 text-center py-4">No element found</div>
+              <div className="text-gray-500 text-center py-4">
+                No element found
+              </div>
             )}
 
             {type === "text" && (
@@ -141,7 +157,7 @@ export function DrawingCollapsible({
                 {filteredItems.map((item, index) => {
                   const isDragOver = index === dragOverIndex;
                   const isDragging = index === draggingIndex;
-                  const isPresent = item.selected;
+                  const isPresent = item.selected || false;
 
                   return (
                     <div
@@ -220,7 +236,8 @@ export function DrawingCollapsible({
                     >
                       {item.svg ? (
                         <span
-                          className="w-1/2 h-1/2"
+                          className="flex items-center justify-center w-1/2 h-1/2 max-w-full max-h-full"
+                          style={{ display: "flex" }}
                           dangerouslySetInnerHTML={{ __html: item.svg }}
                         />
                       ) : (
