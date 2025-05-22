@@ -57,79 +57,6 @@ export function DrawingEditor() {
   const [isSVGCollapseOpen, setIsSVGCollapseOpen] = useState(false);
   const previousShapesRef = useRef<Record<string, any>>({});
 
-
-
-/* ------------------------TEST SVG------------------------------------------- */
-
-interface SvgItem {
-  id: string;
-  name: string;
-  url: string;  // URL all'immagine SVG
-}
-
-
-   const [iconNames, setIconNames] = useState<string[]>([])
-  const [icons, setIcons] = useState<string[]>([])
-
-   useEffect(() => {
-    const fetchIconNames = async () => {
-  const res = await fetch('https://api.iconify.design/mdi:home.svg')
-  const data = await res.json()
-
-  console.log("data, ", data)
-
-  if (data?.icons) {
-    const names = Object.keys(data.icons).slice(0, 20)
-    setIconNames(names)
-  } else {
-    console.error("La risposta non contiene 'icons'", data)
-  }
-}
-
-    fetchIconNames()
-  }, [])
-
-  useEffect(() => {
-    const fetchIcons = async () => {
-      const fetched = await Promise.all(
-        iconNames.map(async (name) => {
-          const res = await fetch(`https://api.iconify.design/mdi:${name}.svg`)
-          return await res.text()
-        })
-      )
-      console.log("fetched ", fetched)
-      setIcons(fetched)
-    }
-
-    if (iconNames.length > 0) {
-      fetchIcons()
-    }
-  }, [iconNames])
-
-
-
-
-
-
-
-
-
-/* ----------------------------FINE TEST SVG----------------------------- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   useEffect(() => {
     fetchApplications();
     fetchDrawings();
@@ -195,7 +122,7 @@ interface SvgItem {
 
         if (removedShapeIds.length > 0) {
           removedShapeIds.forEach((removedId) => {
-            const cleanId = removedId.replace(/^shape:/, ""); // rimuove "shape:" solo se è all'inizio
+            const cleanId = removedId.replace(/^shape:/, "");
             console.log("Shape deleted:", cleanId);
             handleRemoveShape(cleanId);
           });
@@ -577,7 +504,6 @@ interface SvgItem {
       >
         <SelectDrawing />
         <DefaultPageMenu />
-       
       </div>
     );
   }
@@ -650,9 +576,69 @@ interface SvgItem {
   }
   //Gestione drag and drop
   function Collapsibles(props: TLUiStylePanelProps) {
+    const svgs = [
+      {
+        id: 1,
+        name: "Cerchio",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      },
+      {
+        id: 2,
+        name: "Quadrato",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" x="10" y="10" fill="green"/></svg>',
+      },
+      {
+        id: 3,
+        name: "Quadrato",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" x="10" y="10" fill="green"/></svg>',
+      },
+      {
+        id: 4,
+        name: "Quadrato",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" x="10" y="10" fill="green"/></svg>',
+      },
+      {
+        id: 5,
+        name: "Quadrato",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" x="10" y="10" fill="green"/></svg>',
+      },
+      {
+        id: 6,
+        name: "Quadrato",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" x="10" y="10" fill="green"/></svg>',
+      },
+      {
+        id: 7,
+        name: "Cerchio",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      }
+      ,
+      {
+        id: 8,
+        name: "Cerchio",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      }
+      ,
+      {
+        id: 9,
+        name: "Cerchio",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      }
+      ,
+      {
+        id: 10,
+        name: "Cerchio",
+        svg: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      }
+    ];
+
     return (
-      <div className="p-2 absolute flex flex-col gap-[8px]" style={{ pointerEvents: "auto", top: "50px" }}>
+      <div
+        className="p-2 absolute flex flex-col gap-[8px]"
+        style={{ pointerEvents: "auto", top: "50px" }}
+      >
         <DrawingCollapsible
+          type="text"
           title="Applications"
           items={dragDropApplications}
           isOpen={isCollapseOpen}
@@ -660,8 +646,9 @@ interface SvgItem {
         />
 
         <DrawingCollapsible
-          title="SVG"
-          items={[]}
+          type="images"
+          title="Icons"
+          items={svgs}
           isOpen={isSVGCollapseOpen}
           onToggle={(open: boolean) => setIsSVGCollapseOpen(open)}
         />
@@ -672,11 +659,9 @@ interface SvgItem {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     const data = e.dataTransfer.getData("application/json");
-    if (!data) return;
+    if (!data || !editorRef.current) return;
 
     const item = JSON.parse(data);
-    if (!item || !editorRef.current) return;
-
     const editor = editorRef.current;
 
     const bounds = (e.target as HTMLElement).getBoundingClientRect();
@@ -685,19 +670,58 @@ interface SvgItem {
 
     const point = editor.screenToPage({ x, y });
 
+    // SVG
+    if (item.svg) {
+      const assetId = `asset:${crypto.randomUUID()}`;
+      const svgDataUrl = `data:image/svg+xml,${encodeURIComponent(item.svg)}`;
+
+      editor.store.put([
+        {
+          id: assetId,
+          typeName: "asset",
+          type: "image",
+          props: {
+            src: svgDataUrl,
+            mimeType: "image/svg+xml",
+            w: 100,
+            h: 100,
+            name: `svg-${assetId}`,
+            isAnimated: false,
+          },
+
+          meta: {},
+        },
+      ]);
+
+      editor.createShape({
+        id: `shape:${crypto.randomUUID()}`,
+        type: "image",
+        x: point.x,
+        y: point.y,
+        props: {
+          assetId: assetId,
+          w: 100,
+          h: 100,
+        },
+      });
+
+      return;
+    }
+
+    // Altrimenti crea una shape standard (applicazione)
     const existingShape = editor
       .getCurrentPageShapes()
       .find((shape: any) => shape.meta?.data?.id === item.id);
+
     if (existingShape) {
-      console.log("Applicazione già presente sul canvas");
       return;
-    } else {
-      setDragDropApplications((prev) =>
-        prev.map((app) =>
-          app.id === item.id ? { ...app, selected: !app.selected } : app
-        )
-      );
     }
+
+    setDragDropApplications((prev) =>
+      prev.map((app) =>
+        app.id === item.id ? { ...app, selected: !app.selected } : app
+      )
+    );
 
     editor.createShape({
       id: `shape:${item.id}`,
@@ -709,11 +733,11 @@ interface SvgItem {
         w: 250,
         h: 100,
         dash: "draw",
-        fill: "solid",
+        fill: "none",
+        color: "black",
         font: "sans",
-        color: "blue",
         size: "m",
-        text: item?.name,
+        text: item.name,
       },
       meta: {
         type: "application",
@@ -726,7 +750,7 @@ interface SvgItem {
     QuickActions: customActions,
     PageMenu: CustomPageMenu,
     ContextMenu: CustomContextMenu,
-    InFrontOfTheCanvas: Collapsibles
+    InFrontOfTheCanvas: Collapsibles,
   };
 
   const sortedDrawings = [...drawings].sort((a, b) => {
