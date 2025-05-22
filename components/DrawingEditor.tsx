@@ -41,6 +41,9 @@ import { FlowForm } from "./FlowForm";
 import { ApplicationForm } from "./ApplicationForm";
 import { AppWindow, Link, Lock } from "lucide-react";
 import { icons } from "@/assets/icons";
+import { ApplicationShapeUtil } from "./custom_shapes/ApplicationShape";
+
+
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -539,7 +542,7 @@ export function DrawingEditor() {
                   const getClosestApplication = (xPos: number, yPos: number) =>
                     allShapes.find((s: any) => {
                       const isApp =
-                        s.type === "geo" && s.meta?.type === "application";
+                        s.type === "application" && s.meta?.type === "application";
                       if (!isApp) return false;
                       const sx = s.x;
                       const sy = s.y;
@@ -668,7 +671,7 @@ export function DrawingEditor() {
       )
     );
 
-    editor.createShape({
+    /*editor.createShape({
       id: `shape:${item.id}`,
       type: "geo",
       x: point.x,
@@ -688,7 +691,24 @@ export function DrawingEditor() {
         type: "application",
         data: item,
       },
-    });
+    });*/
+    
+   editor.createShape({
+  id: `shape:${item.id}`,
+  type: 'application', // custom type
+  x: point.x,
+  y: point.y,
+  props: {
+    w: 250,
+    h: 100,
+    name: item.name,
+  },
+  meta: {
+    type: 'application',
+    data: item,
+  },
+})
+
   }
 
   const components: TLComponents = {
@@ -710,6 +730,7 @@ export function DrawingEditor() {
         onDragOver={(e) => e.preventDefault()}
       >
         <Tldraw
+          shapeUtils={[ApplicationShapeUtil]}
           components={components}
           onMount={(editor) => {
             editorRef.current = editor;
