@@ -41,6 +41,7 @@ export class ApplicationShapeUtil extends ShapeUtil<ApplicationShape> {
     return (
       <HTMLContainer>
         <div
+        data-shape-ui
           style={{
             width: w,
             height: h,
@@ -74,7 +75,6 @@ export class ApplicationShapeUtil extends ShapeUtil<ApplicationShape> {
     )
   }
 
-  /** ✅ Usa Rectangle2d invece di un oggetto semplice */
   override getGeometry(shape: ApplicationShape) {
     return new Rectangle2d({
       x: 0,

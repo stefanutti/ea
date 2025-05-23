@@ -43,8 +43,6 @@ import { AppWindow, Link, Lock } from "lucide-react";
 import { icons } from "@/assets/icons";
 import { ApplicationShapeUtil } from "./custom_shapes/ApplicationShape";
 
-
-
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -60,6 +58,8 @@ export function DrawingEditor() {
   const [isCollapseOpen, setIsCollapseOpen] = useState(false);
   const [isSVGCollapseOpen, setIsSVGCollapseOpen] = useState(false);
   const previousShapesRef = useRef<Record<string, any>>({});
+
+  //const [selectedShapes, setSelectedShapes] = useState<any>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -149,8 +149,12 @@ export function DrawingEditor() {
   const ShapeListener = track(function MetaUiHelper() {
     const editor = useEditor();
     const selectedShape = editor.getOnlySelectedShape();
+    const getSelectedShapes = editor.getSelectedShapes();
+    //console.log(getSelectedShapes);
     const type = selectedShape?.type;
     const shapeMeta = selectedShape?.meta;
+
+    //setSelectedShapes(getSelectedShapes);
 
     if (type == "arrow") {
       setShowFlowContext(true);
@@ -542,7 +546,8 @@ export function DrawingEditor() {
                   const getClosestApplication = (xPos: number, yPos: number) =>
                     allShapes.find((s: any) => {
                       const isApp =
-                        s.type === "application" && s.meta?.type === "application";
+                        s.type === "application" &&
+                        s.meta?.type === "application";
                       if (!isApp) return false;
                       const sx = s.x;
                       const sy = s.y;
@@ -572,6 +577,14 @@ export function DrawingEditor() {
                 }}
               />
             )}
+            {/*selectedShapes && (
+              <TldrawUiMenuItem
+                id="show_flows"
+                label="Show Flows"
+                readonlyOk
+                onSelect={() => alert("test")}
+              />
+            )*/}
           </div>
         </TldrawUiMenuGroup>
         <DefaultContextMenuContent />
@@ -692,23 +705,22 @@ export function DrawingEditor() {
         data: item,
       },
     });*/
-    
-   editor.createShape({
-  id: `shape:${item.id}`,
-  type: 'application', // custom type
-  x: point.x,
-  y: point.y,
-  props: {
-    w: 250,
-    h: 100,
-    name: item.name,
-  },
-  meta: {
-    type: 'application',
-    data: item,
-  },
-})
 
+    editor.createShape({
+      id: `shape:${item.id}`,
+      type: "application", // custom type
+      x: point.x,
+      y: point.y,
+      props: {
+        w: 250,
+        h: 100,
+        name: item.name,
+      },
+      meta: {
+        type: "application",
+        data: item,
+      },
+    });
   }
 
   const components: TLComponents = {
