@@ -70,7 +70,6 @@ export function DrawingEditor() {
   const fetchApplications = async () => {
     getApplications().then((result) => {
       if (result && result.length > 0) {
-        console.log("GET APP-> ", result.length);
         const apps = result.map((r: any) => r.a);
         setApplications(apps);
 
@@ -79,6 +78,7 @@ export function DrawingEditor() {
           name: item.properties.name,
           selected: false,
         }));
+
         setDragDropApplications(transformedData);
       } else {
         toast.error("Failed to load applications");
@@ -321,7 +321,7 @@ export function DrawingEditor() {
         toast.error("Failed to save application");
       }
       setIsLoading(false);
-    });
+    }).finally(() => fetchApplications());
   };
 
   const handleSaveFlow = async (data: any) => {
