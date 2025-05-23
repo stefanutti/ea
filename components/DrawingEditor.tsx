@@ -42,7 +42,7 @@ import { ApplicationForm } from "./ApplicationForm";
 import { AppWindow, Link, Lock } from "lucide-react";
 import { icons } from "@/assets/icons";
 import { ApplicationShapeUtil } from "./custom_shapes/ApplicationShape";
-import { saveApplication, saveFlow } from "@/lib/neo4jUtils";
+import { getApplications, saveApplication, saveFlow } from "@/lib/neo4jUtils";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -68,25 +68,22 @@ export function DrawingEditor() {
   }, []);
 
   const fetchApplications = async () => {
-    try {
-      const result: any[] = await executeQuery(
-        "MATCH (a:Application) RETURN a ORDER BY a.name ASC",
-        {},
-        new AbortController().signal
-      );
-      const apps = result.map((r) => r.a);
-      setApplications(apps);
+    getApplications().then((result) => {
+      if (result && result.length > 0) {
+        console.log("GET APP-> ", result.length);
+        const apps = result.map((r: any) => r.a);
+        setApplications(apps);
 
-      const transformedData = apps.map((item: any) => ({
-        id: item.properties.application_id,
-        name: item.properties.name,
-        selected: false,
-      }));
-      setDragDropApplications(transformedData);
-    } catch (err) {
-      console.error("Errore nel recupero delle applicazioni:", err);
-      toast.error("Errore nel caricamento delle applicazioni");
-    }
+        const transformedData = apps.map((item: any) => ({
+          id: item.properties.application_id,
+          name: item.properties.name,
+          selected: false,
+        }));
+        setDragDropApplications(transformedData);
+      } else {
+        toast.error("Failed to load applications");
+      }
+    });
   };
 
   const fetchDrawings = async () => {
@@ -150,11 +147,11 @@ export function DrawingEditor() {
   const ShapeListener = track(function MetaUiHelper() {
     const editor = useEditor();
 
-    useEffect(() => {
+    /*useEffect(() => {
       const getSelectedShapes = editor.getSelectedShapes();
       console.log(getSelectedShapes);
       setSelectedShapes(getSelectedShapes);
-    }, [editor.getSelectedShapes().length]);
+    }, [editor.getSelectedShapes().length]);*/
 
     const selectedShape = editor.getOnlySelectedShape();
     const type = selectedShape?.type;
@@ -505,14 +502,14 @@ export function DrawingEditor() {
                 }}
               />
             )}
-            {selectedShapes.length && (
+            {/*selectedShapes.length && (
               <TldrawUiMenuItem
                 id="show_flows"
                 label="Show Flows"
                 readonlyOk
                 onSelect={() => alert("test")}
               />
-            )}
+            )*/}
           </div>
         </TldrawUiMenuGroup>
         <DefaultContextMenuContent />
