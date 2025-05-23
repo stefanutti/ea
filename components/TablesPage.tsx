@@ -26,6 +26,14 @@ import { ApplicationForm } from "./ApplicationForm";
 import { FlowForm } from "./FlowForm";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmModal } from "./ConfirmModal";
+import {
+  deleteApplication,
+  deleteFlow,
+  editApplication,
+  editFlow,
+  getApplications,
+  getFlows,
+} from "@/lib/neo4jUtils";
 
 type SortConfig = {
   key: string;
@@ -117,48 +125,36 @@ export function TablesPage() {
   });
 
   const fetchApplications = async () => {
-    try {
-      const results = await executeQuery(
-        "MATCH (a:Application) OPTIONAL MATCH (a)-[r]-() RETURN a, COUNT(r) > 0 AS hasRelations",
-        {},
-        new AbortController().signal
-      );
-
-      setApplications(
-        results.map((record : any) => ({
-          id: record.a.elementId,
-          type: "application",
-          hasRelationship: record.hasRelations,
-          ...record.a.properties,
-        }))
-      );
-      //toast.success("Applications data loaded successfully");
-    } catch (error) {
-      console.error("Error fetching applications:", error);
-      toast.error("Failed to load applications");
-    }
+    getApplications().then((result) => {
+      if (result && result.length > 0) {
+        setApplications(
+          result.map((record: any) => ({
+            id: record.a.elementId,
+            type: "application",
+            hasRelationship: record.hasRelations,
+            ...record.a.properties,
+          }))
+        );
+      } else {
+        toast.error("Failed to load applications");
+      }
+    });
   };
 
   const fetchFlows = async () => {
-    try {
-      const results = await executeQuery(
-        "MATCH ()-[r:flow]->() RETURN r",
-        {},
-        new AbortController().signal
-      );
-
-      setFlows(
-        results.map((record : any) => ({
-          id: record.r.elementId,
-          type: "flow",
-          ...record.r.properties,
-        }))
-      );
-      //toast.success("Flows data loaded successfully");
-    } catch (error) {
-      console.error("Error fetching flows:", error);
-      toast.error("Failed to load flows");
-    }
+    getFlows().then((result) => {
+      if (result && result.length > 0) {
+        setFlows(
+          result.map((record: any) => ({
+            id: record.r.elementId,
+            type: "flow",
+            ...record.r.properties,
+          }))
+        );
+      } else {
+        toast.error("Failed to load flows");
+      }
+    });
   };
 
   const fetchAllData = async () => {
@@ -387,104 +383,32 @@ export function TablesPage() {
     if (!data) return;
 
     setIsLoading(true);
-    try {
-      const editNodeQuery = `
-          MATCH (a:Application { application_id: $application_id })
-            SET
-              a.name = $name,
-              a.description = $description,
-              a.ownerships = $ownerships,
-              a.application_type = $application_type,
-              a.complexity = $complexity,
-              a.criticality = $criticality,
-              a.processes = $processes,
-              a.active = $active,
-              a.internal_application_specialists = $internal_application_specialists,
-              a.business_partner_business_contacts = $business_partner_business_contacts,
-              a.business_contacts = $business_contacts,
-              a.internal_developers = $internal_developers,
-              a.hosting = $hosting,
-              a.ams = $ams,
-              a.bi = $bi,
-              a.disaster_recovery = $disaster_recovery,
-              a.user_license_type = $user_license_type,
-              a.access_type = $access_type,
-              a.sw_supplier = $sw_supplier,
-              a.ams_expire_date = $ams_expire_date,
-              a.ams_contacts_email = $ams_contacts_email,
-              a.ams_contact_phone = $ams_contact_phone,
-              a.ams_supplier = $ams_supplier,
-              a.smes_factory = $smes_factory,
-              a.ams_portal = $ams_portal,
-              a.organization_family = $organization_family,
-              a.links_to_documentation = $links_to_documentation,
-              a.scope = $scope,
-              a.ams_service = $ams_service,
-              a.ams_type = $ams_type,
-              a.decommission_date = $decommission_date,
-              a.to_be_decommissioned = $to_be_decommissioned,
-              a.notes = $notes,
-              a.links_to_sharepoint_documentation = $links_to_sharepoint_documentation
-            RETURN a
-        `;
-
-      const result = await executeQuery(editNodeQuery, data);
-
+    editApplication(data).then((result) => {
       if (result && result.length > 0) {
-        setIsApplicationDialogOpen(false);
         toast.success("Application edited successfully");
+        setIsApplicationDialogOpen(false);
+      } else {
+        toast.error("Failed to edit application");
       }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
       setIsLoading(false);
       fetchAllData();
-    }
+    });
   };
 
   const handleSaveFlow = async (data: any) => {
     if (!data) return;
 
     setIsLoading(true);
-    try {
-      const editFlowQuery = `
-          MATCH (initiator:Application {application_id: $initiator_application})
-          MATCH (target:Application {application_id: $target_application})
-          MATCH (initiator)-[f:flow]->(target)
-  
-          SET
-            f.name = $name,
-            f.description = $description,
-            f.communication_mode = $communication_mode,
-            f.intent = $intent,
-            f.message_format = $message_format,
-            f.data_flow = $data_flow,
-            f.protocol = $protocol,
-            f.frequency = $frequency,
-            f.estimated_calls_per_day = $estimated_calls_per_day,
-            f.average_execution_time_in_sec = $average_execution_time_in_sec,
-            f.average_message_size_in_kb = $average_message_size_in_kb,
-            f.api_gateway = $api_gateway,
-            f.release_date = $release_date,
-            f.notes = $notes,
-            f.labels = $labels
-          RETURN f
-          `;
-
-      const result = await executeQuery(editFlowQuery, data);
-
+    editFlow(data).then((result) => {
       if (result && result.length > 0) {
-        setIsFlowDialogOpen(false);
         toast.success("Flow edited successfully");
+        setIsFlowDialogOpen(false);
+      } else {
+        toast.error("Failed to edit flow");
       }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
       setIsLoading(false);
       fetchAllData();
-    }
+    });
   };
 
   const handleDelete = async (data: any) => {
@@ -495,32 +419,26 @@ export function TablesPage() {
     setIsLoading(true);
 
     if (type == "flow") {
-      try {
-        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${data.flow_id}" DELETE r`;
-        const result = await executeQuery(deleteFlowQuery, {});
-
+      deleteFlow(data).then((result) => {
         if (result) {
-          setIsConfirmModalOpen({ show: false, data: {} });
-          toast.success("Flow deleted");
+          toast.success("Flow deleted successfully");
+          fetchAllData();
+        } else {
+          toast.error("Error deleting the flow");
         }
-      } catch (err) {
-        toast.error("Error deleting the flow");
-      }
+      });
     } else if (type == "application") {
-      try {
-        const deleteAppQuery = `MATCH (n:Application { application_id: "${data.application_id}" }) DELETE n`;
-        const result = await executeQuery(deleteAppQuery, {});
-
+      deleteApplication(data).then((result) => {
         if (result) {
-          setIsConfirmModalOpen({ show: false, data: {} });
-          toast.success("Application deleted");
+          toast.success("Application deleted successfully");
+          fetchAllData();
+        } else {
+          toast.error("Error deleting the application");
         }
-      } catch (err) {
-        toast.error("Error deleting the application");
-      }
+      });
     }
 
-    fetchAllData();
+    setIsConfirmModalOpen({ show: false, data: {} });
     setIsLoading(false);
   };
 
@@ -571,7 +489,7 @@ export function TablesPage() {
                       <TableHead className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm">
                         Select
                       </TableHead>
-                      {columns.map((column : any) => (
+                      {columns.map((column: any) => (
                         <TableHead
                           key={column}
                           className="sticky top-0 z-10 bg-background whitespace-nowrap shadow-sm"
@@ -600,7 +518,7 @@ export function TablesPage() {
                             onChange={() => setSelectedRowId(item.id)}
                           />
                         </TableCell>
-                        {columns.map((column : any) => (
+                        {columns.map((column: any) => (
                           <TableCell
                             key={`${item.id}-${column}`}
                             className="whitespace-nowrap"

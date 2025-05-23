@@ -42,6 +42,7 @@ import { ApplicationForm } from "./ApplicationForm";
 import { AppWindow, Link, Lock } from "lucide-react";
 import { icons } from "@/assets/icons";
 import { ApplicationShapeUtil } from "./custom_shapes/ApplicationShape";
+import { saveApplication, saveFlow } from "@/lib/neo4jUtils";
 
 export function DrawingEditor() {
   const [selected, setSelected] = useState<any>(null);
@@ -59,7 +60,7 @@ export function DrawingEditor() {
   const [isSVGCollapseOpen, setIsSVGCollapseOpen] = useState(false);
   const previousShapesRef = useRef<Record<string, any>>({});
 
-  //const [selectedShapes, setSelectedShapes] = useState<any>(null);
+  const [selectedShapes, setSelectedShapes] = useState<any>([]);
 
   useEffect(() => {
     fetchApplications();
@@ -148,13 +149,16 @@ export function DrawingEditor() {
 
   const ShapeListener = track(function MetaUiHelper() {
     const editor = useEditor();
+
+    useEffect(() => {
+      const getSelectedShapes = editor.getSelectedShapes();
+      console.log(getSelectedShapes);
+      setSelectedShapes(getSelectedShapes);
+    }, [editor.getSelectedShapes().length]);
+
     const selectedShape = editor.getOnlySelectedShape();
-    const getSelectedShapes = editor.getSelectedShapes();
-    //console.log(getSelectedShapes);
     const type = selectedShape?.type;
     const shapeMeta = selectedShape?.meta;
-
-    //setSelectedShapes(getSelectedShapes);
 
     if (type == "arrow") {
       setShowFlowContext(true);
@@ -312,106 +316,30 @@ export function DrawingEditor() {
     if (!data) return;
 
     setIsLoading(true);
-    try {
-      const createNodeQuery = `
-          CREATE (a:Application {
-            application_id: $application_id,
-            name: $name,
-            description: $description,
-            ownerships: $ownerships,
-            application_type: $application_type,
-            complexity: $complexity,
-            criticality: $criticality,
-            processes: $processes,
-            active: $active,
-            internal_application_specialists: $internal_application_specialists,
-            business_partner_business_contacts: $business_partner_business_contacts,
-            business_contacts: $business_contacts,
-            internal_developers: $internal_developers,
-            hosting: $hosting,
-            ams: $ams,
-            bi: $bi,
-            disaster_recovery: $disaster_recovery,
-            user_license_type: $user_license_type,
-            access_type: $access_type,
-            sw_supplier: $sw_supplier,
-            ams_expire_date: $ams_expire_date,
-            ams_contacts_email: $ams_contacts_email,
-            ams_contact_phone: $ams_contact_phone,
-            ams_supplier: $ams_supplier,
-            smes_factory: $smes_factory,
-            ams_portal: $ams_portal,
-            organization_family: $organization_family,
-            links_to_documentation: $links_to_documentation,
-            scope: $scope,
-            ams_service: $ams_service,
-            ams_type: $ams_type,
-            decommission_date: $decommission_date,
-            to_be_decommissioned: $to_be_decommissioned,
-            notes: $notes,
-            links_to_sharepoint_documentation: $links_to_sharepoint_documentation
-          })
-          RETURN a
-        `;
-
-      const result = await executeQuery(createNodeQuery, data);
-
+    saveApplication(data).then((result) => {
       if (result && result.length > 0) {
         toast.success("Application added successfully");
         setIsApplicationDialogOpen(false);
+      } else {
+        toast.error("Failed to save application");
       }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
       setIsLoading(false);
-    }
+    });
   };
 
   const handleSaveFlow = async (data: any) => {
     if (!data) return;
 
     setIsLoading(true);
-    try {
-      const createFlowQuery = `
-          MATCH (initiator:Application {application_id: $initiator_application})
-          MATCH (target:Application {application_id: $target_application})
-  
-          CREATE (initiator)-[f:flow {
-            flow_id: $flow_id,
-            name: $name,
-            description: $description,
-            initiator_application: $initiator_application,
-            target_application: $target_application,
-            communication_mode: $communication_mode,
-            intent: $intent,
-            message_format: $message_format,
-            data_flow: $data_flow,
-            protocol: $protocol,
-            frequency: $frequency,
-            estimated_calls_per_day: $estimated_calls_per_day,
-            average_execution_time_in_sec: $average_execution_time_in_sec,
-            average_message_size_in_kb: $average_message_size_in_kb,
-            api_gateway: $api_gateway,
-            release_date: $release_date,
-            notes: $notes,
-            labels: $labels
-          }]->(target)
-          RETURN f
-        `;
-
-      const result = await executeQuery(createFlowQuery, data);
-
+    saveFlow(data).then((result) => {
       if (result && result.length > 0) {
         toast.success("Flow added successfully");
         setIsFlowDialogOpen(false);
+      } else {
+        toast.error("Failed to save flow");
       }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
       setIsLoading(false);
-    }
+    });
   };
 
   function customActions() {
@@ -577,14 +505,14 @@ export function DrawingEditor() {
                 }}
               />
             )}
-            {/*selectedShapes && (
+            {selectedShapes.length && (
               <TldrawUiMenuItem
                 id="show_flows"
                 label="Show Flows"
                 readonlyOk
                 onSelect={() => alert("test")}
               />
-            )*/}
+            )}
           </div>
         </TldrawUiMenuGroup>
         <DefaultContextMenuContent />

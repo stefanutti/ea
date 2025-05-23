@@ -24,6 +24,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { QueryInput } from "@/components/QueryInput";
+import { deleteApplication, deleteFlow, editApplication, editFlow, saveApplication, saveFlow } from "@/lib/neo4jUtils";
 
 type SortConfig = {
   key: string;
@@ -316,100 +317,13 @@ export function NetworkGraph() {
   };
 
   const handleSaveApplication = async (data: any) => {
+
     if (!data) return;
-
     setIsLoading(true);
-    try {
-      const createNodeQuery = `
-        CREATE (a:Application {
-          application_id: $application_id,
-          name: $name,
-          description: $description,
-          ownerships: $ownerships,
-          application_type: $application_type,
-          complexity: $complexity,
-          criticality: $criticality,
-          processes: $processes,
-          active: $active,
-          internal_application_specialists: $internal_application_specialists,
-          business_partner_business_contacts: $business_partner_business_contacts,
-          business_contacts: $business_contacts,
-          internal_developers: $internal_developers,
-          hosting: $hosting,
-          ams: $ams,
-          bi: $bi,
-          disaster_recovery: $disaster_recovery,
-          user_license_type: $user_license_type,
-          access_type: $access_type,
-          sw_supplier: $sw_supplier,
-          ams_expire_date: $ams_expire_date,
-          ams_contacts_email: $ams_contacts_email,
-          ams_contact_phone: $ams_contact_phone,
-          ams_supplier: $ams_supplier,
-          smes_factory: $smes_factory,
-          ams_portal: $ams_portal,
-          organization_family: $organization_family,
-          links_to_documentation: $links_to_documentation,
-          scope: $scope,
-          ams_service: $ams_service,
-          ams_type: $ams_type,
-          decommission_date: $decommission_date,
-          to_be_decommissioned: $to_be_decommissioned,
-          notes: $notes,
-          links_to_sharepoint_documentation: $links_to_sharepoint_documentation
-        })
-        RETURN a
-      `;
 
-      const editNodeQuery = `
-        MATCH (a:Application { application_id: $application_id })
-          SET
-            a.name = $name,
-            a.description = $description,
-            a.ownerships = $ownerships,
-            a.application_type = $application_type,
-            a.complexity = $complexity,
-            a.criticality = $criticality,
-            a.processes = $processes,
-            a.active = $active,
-            a.internal_application_specialists = $internal_application_specialists,
-            a.business_partner_business_contacts = $business_partner_business_contacts,
-            a.business_contacts = $business_contacts,
-            a.internal_developers = $internal_developers,
-            a.hosting = $hosting,
-            a.ams = $ams,
-            a.bi = $bi,
-            a.disaster_recovery = $disaster_recovery,
-            a.user_license_type = $user_license_type,
-            a.access_type = $access_type,
-            a.sw_supplier = $sw_supplier,
-            a.ams_expire_date = $ams_expire_date,
-            a.ams_contacts_email = $ams_contacts_email,
-            a.ams_contact_phone = $ams_contact_phone,
-            a.ams_supplier = $ams_supplier,
-            a.smes_factory = $smes_factory,
-            a.ams_portal = $ams_portal,
-            a.organization_family = $organization_family,
-            a.links_to_documentation = $links_to_documentation,
-            a.scope = $scope,
-            a.ams_service = $ams_service,
-            a.ams_type = $ams_type,
-            a.decommission_date = $decommission_date,
-            a.to_be_decommissioned = $to_be_decommissioned,
-            a.notes = $notes,
-            a.links_to_sharepoint_documentation = $links_to_sharepoint_documentation
-          RETURN a
-      `;
-
-      const result = await executeQuery(
-        Object.keys(applicationData).length === 0
-          ? createNodeQuery
-          : editNodeQuery,
-        data
-      );
-
-      if (result && result.length > 0) {
-        if (Object.keys(applicationData).length === 0) {
+    if (Object.keys(applicationData).length === 0) {
+      saveApplication(data).then((result) => {
+        if (result && result.length > 0) {
           const newNode = result[0].a;
 
           if (networkRef.current) {
@@ -434,88 +348,32 @@ export function NetworkGraph() {
 
           toast.success("Application added successfully");
         } else {
-          toast.success("Application edited successfully");
+          toast.error("Failed to save application");
         }
-
-        handleQueryResults;
-        setIsApplicationDialogOpen(false);
-      }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
-      setIsLoading(false);
+      });
+    } else {
+      editApplication(data).then((result) => {
+        if (result && result.length > 0) {
+          toast.success("Application edited successfully");
+        } else {
+          toast.error("Failed to edit application");
+        }
+      });
     }
+
+    handleQueryResults;
+    setIsApplicationDialogOpen(false);
+    setIsLoading(false);
   };
 
   const handleSaveFlow = async (data: any) => {
-    if (!data) return;
 
+     if (!data) return;
     setIsLoading(true);
-    try {
-      const createFlowQuery = `
-        MATCH (initiator:Application {application_id: $initiator_application})
-        MATCH (target:Application {application_id: $target_application})
 
-        CREATE (initiator)-[f:flow {
-          flow_id: $flow_id,
-          name: $name,
-          description: $description,
-          initiator_application: $initiator_application,
-          target_application: $target_application,
-          communication_mode: $communication_mode,
-          intent: $intent,
-          message_format: $message_format,
-          data_flow: $data_flow,
-          protocol: $protocol,
-          frequency: $frequency,
-          estimated_calls_per_day: $estimated_calls_per_day,
-          average_execution_time_in_sec: $average_execution_time_in_sec,
-          average_message_size_in_kb: $average_message_size_in_kb,
-          api_gateway: $api_gateway,
-          release_date: $release_date,
-          notes: $notes,
-          labels: $labels
-        }]->(target)
-        RETURN f
-      `;
-
-      const editFlowQuery = `
-        MATCH (initiator:Application {application_id: $initiator_application})
-        MATCH (target:Application {application_id: $target_application})
-        MATCH (initiator)-[f:flow]->(target)
-
-        SET
-          f.name = $name,
-          f.initiator_application = $initiator_application,
-          f.target_application = $target_application,
-          f.description = $description,
-          f.communication_mode = $communication_mode,
-          f.intent = $intent,
-          f.message_format = $message_format,
-          f.data_flow = $data_flow,
-          f.protocol = $protocol,
-          f.frequency = $frequency,
-          f.estimated_calls_per_day = $estimated_calls_per_day,
-          f.average_execution_time_in_sec = $average_execution_time_in_sec,
-          f.average_message_size_in_kb = $average_message_size_in_kb,
-          f.api_gateway = $api_gateway,
-          f.release_date = $release_date,
-          f.notes = $notes,
-          f.labels = $labels
-        RETURN f
-        `;
-
-      //console.log("Data submit ", data);
-      const result = await executeQuery(
-        Object.keys(flowData).length === 0 ? createFlowQuery : editFlowQuery,
-        data
-      );
-
-      if (result && result.length > 0) {
-        //console.log("Result ", result);
-
-        if (Object.keys(flowData).length === 0) {
+    if (Object.keys(flowData).length === 0) {
+      saveFlow(data).then((result) => {
+        if (result && result.length > 0) {
           const newNode = result[0].f;
 
           if (networkRef.current) {
@@ -542,18 +400,22 @@ export function NetworkGraph() {
 
           toast.success("Flow added successfully");
         } else {
-          toast.success("Flow edited successfully");
+          toast.error("Failed to save flow");
         }
-
-        handleQueryResults;
-        setIsFlowDialogOpen(false);
-      }
-    } catch (error) {
-      console.error("Error saving application:", error);
-      toast.error("Failed to save application: " + (error as Error).message);
-    } finally {
-      setIsLoading(false);
+      });
+    } else {
+      editFlow(data).then((result) => {
+        if (result && result.length > 0) {
+          toast.success("Flow edited successfully");
+        } else {
+          toast.error("Failed to edit flow");
+        }
+      });
     }
+
+    handleQueryResults;
+    setIsFlowDialogOpen(false);
+    setIsLoading(false);
   };
 
   const handleDeleteButton = async (data: any) => {
@@ -564,41 +426,33 @@ export function NetworkGraph() {
     setIsLoading(true);
 
     if (type == "flow") {
-      try {
-        const deleteFlowQuery = `MATCH ()-[r:flow]->() WHERE r.flow_id = "${data.flow_id}" DELETE r`;
-        const result = await executeQuery(deleteFlowQuery, {});
 
-        if (result) {
-          toast.success("Flow deleted");
-
-          if (networkRef.current) {
+      deleteFlow(data).then((result) => {
+      if (result) {
+        toast.success("Flow deleted successfully");
+        if (networkRef.current) {
             networkRef.current.body.data.edges.remove(elementId);
           }
-        }
-      } catch (err) {
+      } else {
         toast.error("Error deleting the flow");
       }
+    });
     } else if(type == 'application'){
-      try {
-        const deleteAppQuery = `MATCH (n:Application { application_id: "${data.application_id}" }) DELETE n`;
-        const result = await executeQuery(deleteAppQuery, {});
 
-        if (result) {
-          toast.success("Application deleted");
-
-          if (networkRef.current) {
+      deleteApplication(data).then((result) => {
+      if (result) {
+        toast.success("Application deleted successfully");
+        if (networkRef.current) {
             networkRef.current.body.data.nodes.remove(elementId);
-          }
-
         }
-      } catch (err) {
+      } else {
         toast.error("Error deleting the application");
       }
+    });
     }
 
     setIsConfirmModalOpen({ show: false, data: {} });
     setIsLoading(false);
-
   };
 
   const togglePhysics = useCallback(() => {
