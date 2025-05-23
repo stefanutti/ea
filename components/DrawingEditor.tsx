@@ -61,11 +61,16 @@ export function DrawingEditor() {
   const previousShapesRef = useRef<Record<string, any>>({});
 
   const [selectedShapes, setSelectedShapes] = useState<any>([]);
+  const [selectedArrowId, setselectedArrowId] = useState<any>();
 
   useEffect(() => {
     fetchApplications();
     fetchDrawings();
   }, []);
+
+  useEffect(() => {
+    if (!setIsFlowDialogOpen) setFlowFormData({});
+  }, [isFlowDialogOpen]);
 
   const fetchApplications = async () => {
     getApplications().then((result) => {
@@ -125,7 +130,6 @@ export function DrawingEditor() {
         if (removedShapeIds.length > 0) {
           removedShapeIds.forEach((removedId) => {
             const cleanId = removedId.replace(/^shape:/, "");
-            console.log("Shape deleted:", cleanId);
             handleRemoveShape(cleanId);
           });
         }
@@ -154,10 +158,13 @@ export function DrawingEditor() {
     }, [editor.getSelectedShapes().length]);*/
 
     const selectedShape = editor.getOnlySelectedShape();
+    console.log(selectedShape)
     const type = selectedShape?.type;
+    const shapeId = selectedShape?.id;
     const shapeMeta = selectedShape?.meta;
 
     if (type == "arrow") {
+      setselectedArrowId(shapeId)
       setShowFlowContext(true);
     } else {
       setShowFlowContext(false);
@@ -537,6 +544,18 @@ export function DrawingEditor() {
           items={Object.values(icons)}
           isOpen={isSVGCollapseOpen}
           onToggle={(open: boolean) => setIsSVGCollapseOpen(open)}
+          footer={(search) => (
+            <a
+              href={`https://fonts.google.com/icons?icon.query=${encodeURIComponent(
+                search
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline text-sm"
+            >
+              Search on Google Icons
+            </a>
+          )}
         />
       </div>
     );

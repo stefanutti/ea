@@ -23,6 +23,8 @@ interface DrawingCollapsibleProps {
   type?: "text" | "images";
   width?: string | number;
   height?: string | number;
+  footer?: (search: string) => React.ReactNode;
+
 }
 
 export function DrawingCollapsible({
@@ -33,6 +35,7 @@ export function DrawingCollapsible({
   type = "text",
   width = "250px",
   height,
+  footer
 }: DrawingCollapsibleProps) {
   const [search, setSearch] = useState("");
   const [list, setList] = useState(items);
@@ -249,6 +252,8 @@ export function DrawingCollapsible({
                 })}
               </div>
             )}
+
+             {footer && <div className="mt-2 border-t pt-2">{footer(search)}</div>}
           </div>
         </CollapsibleContent>
       </Collapsible>
