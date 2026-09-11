@@ -43,7 +43,7 @@ import { AppWindow, Link } from "lucide-react";
 import { icons } from "@/assets/icons";
 import { ApplicationShapeUtil } from "./custom_shapes/ApplicationShape";
 import { getNodesRelationships } from "@/lib/neo4jUtils";
-
+import { getIconsForApplication } from "@/lib/utils";
 interface Application {
   id: string;
   name: string;
@@ -52,6 +52,7 @@ interface Application {
 interface DragDropItem extends Application {
   selected: boolean;
   type: "shape" | "label" | "image";
+  icons: string[];
 }
 
 export function DrawingEditor() {
@@ -84,6 +85,8 @@ export function DrawingEditor() {
     if (!isFlowDialogOpen) setFlowFormData({});
   }, [isFlowDialogOpen]);
 
+  const applicationIconsMapRef = useRef<Record<string, any[]>>({});
+
   const fetchApplications = async () => {
     try {
       const response = await fetch('/api/neo4j/applications');
@@ -91,16 +94,20 @@ export function DrawingEditor() {
       
       const result = await response.json();
       if (result && result.length > 0) {
+        const iconsMap: Record<string, any[]> = {};
         const apps = result.map((r: any) => r.a);
         setApplications(apps);
-
-        const transformedData: DragDropItem[] = apps.map((item: any) => ({
+        const transformedData: DragDropItem[] = apps.map((item: any) => {          
+        const icons = getIconsForApplication(item); // calcola le icone dai dati completi
+        applicationIconsMapRef.current[item.properties.application_id] = icons; // ← popolo la ref
+        return {
           id: item.properties.application_id,
           name: item.properties.name,
           selected: false,
           type: "shape",
-        }));
-
+          icons: icons,  // <- qui le aggiungi
+        };
+      });
         setDragDropApplications(transformedData);
       } else {
         toast.error("Failed to load applications");
@@ -412,7 +419,8 @@ export function DrawingEditor() {
 
         const fromShapeId = objShapes[from]; //`shape:${from}`;
         const toShapeId = objShapes[to]; //`shape:${to}`;
-
+        const fromShape = editor.getShape(fromShapeId);
+        
         //console.log("from ", objShapes[from])
         //console.log("to ", objShapes[to])
 
@@ -425,12 +433,12 @@ export function DrawingEditor() {
             props: {
               text: name,
               arrowheadEnd: "arrow",
+              icons: fromShape?.props?.icons ?? [],
               bend: (index - (total - 1) / 2) * 80 * (isForward ? 1 : -1),
               start: { x: 0, y: 0 }, // Questi verranno poi overridati dai binding
               end: { x: 0, y: 0 },   // Questi verranno poi overridati dai binding
-            },
+            },           
           });
-
           editor.createBinding({
             type: "arrow",
             fromId: flowIdUnique,
@@ -444,6 +452,7 @@ export function DrawingEditor() {
             toId: toShapeId,
             props: { terminal: "end" },
           });
+          
         //}
       };
 
@@ -793,7 +802,6 @@ export function DrawingEditor() {
       if (item.type === "image") {
         const assetId = `asset:${crypto.randomUUID()}`;
         const svgDataUrl = `data:image/svg+xml,${encodeURIComponent(item.svg)}`;
-
         editor.store.put([
           {
             id: assetId,
@@ -806,11 +814,11 @@ export function DrawingEditor() {
               h: 100,
               name: `svg-${assetId}`,
               isAnimated: false,
+              icons: item.icons,
             },
             meta: {},
           },
         ]);
-
         editor.createShape({
           id: `shape:${crypto.randomUUID()}`,
           type: "image",
@@ -975,13 +983,12 @@ export function DrawingEditor() {
           toast.info("This application is already on the canvas.");
           return;
         }*/
-
+        const icons = applicationIconsMapRef.current[item.id] || [];
         setDragDropApplications((prev) =>
           prev.map((app) =>
             app.id === item.id ? { ...app, selected: false /*!app.selected*/ } : app
           )
         );
-
         editor.createShape({
           id: `shape:${item.id}@${crypto.randomUUID()}`,
           type: "application",
@@ -991,6 +998,7 @@ export function DrawingEditor() {
             w: 250,
             h: 100,
             name: item.name,
+            icons: icons,
           },
           meta: {
             type: "application",

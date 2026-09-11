@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-construct",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "sources/microservices/web-construct"],
+      "port": 3000
+    },
+    {
+      "name": "web-construct-e2e",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "set -a && . ./sources/microservices/web-construct/.env.test.local && set +a && DATABASE_URL=\"$TEST_DATABASE_POOLED_URL\" AUTH_TEST_CREDENTIALS=true NEXT_PUBLIC_AUTH_TEST_MODE=true npm run dev --prefix sources/microservices/web-construct"
+      ],
+      "port": 3000
+    }
+  ]
+}
